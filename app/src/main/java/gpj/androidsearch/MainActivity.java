@@ -37,6 +37,8 @@ public class MainActivity extends Activity {
         textView = (TextView) findViewById(R.id.textView);
         ActionBar actionBar = getActionBar();
         actionBar.setDisplayHomeAsUpEnabled(false);
+        actionBar.setDisplayShowHomeEnabled(true);
+        actionBar.setIcon(R.drawable.search);
         handleIntent(getIntent());
     }
 
@@ -60,6 +62,11 @@ public class MainActivity extends Activity {
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));
 
+
+        int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
+        ImageView v = (ImageView) searchView.findViewById(searchImgId);
+        v.setImageResource(R.drawable.cross);
+        
         return true;
     }
 
