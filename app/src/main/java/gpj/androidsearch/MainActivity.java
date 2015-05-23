@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -61,7 +62,6 @@ public class MainActivity extends Activity {
                 (SearchView) menu.findItem(R.id.action_search).getActionView();
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));
-
 
         int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
         ImageView v = (ImageView) searchView.findViewById(searchImgId);
