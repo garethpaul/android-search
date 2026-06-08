@@ -34,6 +34,9 @@ JSON responses.
 
 - `make check`
 - `scripts/check-baseline.sh`
+- `ANDROID_HOME=/home/gjones/android-sdk ./gradlew lint --no-daemon`
+- `ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon`
+- `ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon`
 - `git diff --check`
 
 ## Follow-Up Candidates
