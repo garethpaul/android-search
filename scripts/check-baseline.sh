@@ -39,6 +39,31 @@ if grep -Fq '"https://garethpaul-app.appspot.com/api/search?q=" + query' "$NETWO
   exit 1
 fi
 
+if grep -Fq 'catch (Throwable' "$NETWORK_REQUEST"; then
+  printf '%s\n' "NetworkRequest must not swallow broad Throwable failures." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'catch (UnsupportedEncodingException e)' "$NETWORK_REQUEST"; then
+  printf '%s\n' "NetworkRequest must catch query encoding failures explicitly." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'catch (JSONException e)' "$NETWORK_REQUEST"; then
+  printf '%s\n' "NetworkRequest must catch JSON parse failures explicitly." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'Log.e(TAG, "Search request I/O failure.", e)' "$NETWORK_REQUEST"; then
+  printf '%s\n' "NetworkRequest must log I/O failures with exception context." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'if (json == null)' "$ROOT_DIR/app/src/main/java/gpj/androidsearch/MainActivity.java"; then
+  printf '%s\n' "MainActivity must handle a null search response before reading fields." >&2
+  exit 1
+fi
+
 if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the SDK-free baseline check." >&2
   exit 1

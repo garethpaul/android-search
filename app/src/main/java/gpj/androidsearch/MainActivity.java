@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends Activity {
 
+    private static final String TAG = "main_activity";
     private JSONObject json;
     private JSONArray results;
     private TextView textView;
@@ -80,6 +81,10 @@ public class MainActivity extends Activity {
             request.execute(String.valueOf(query));
             try {
                 json = (JSONObject) request.get();
+                if (json == null) {
+                    textView.setText(R.string.search_failed);
+                    return;
+                }
                 //Log.v("json", json.toString());
                 String textInfo = (String) json.get("text");
                 textView.setText(textInfo);
@@ -90,15 +95,20 @@ public class MainActivity extends Activity {
                         .execute(textImage);
 
 
-                } catch (InterruptedException e) {
-                e.printStackTrace();
-
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                showSearchFailed(e);
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                showSearchFailed(e);
             } catch (JSONException e) {
-                  e.printStackTrace();
+                showSearchFailed(e);
             }
         }
+    }
+
+    private void showSearchFailed(Exception e) {
+        textView.setText(R.string.search_failed);
+        Log.e(TAG, "Search failed.", e);
     }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
