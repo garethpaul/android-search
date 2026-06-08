@@ -1,5 +1,8 @@
 # Android Search
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 Legacy Android search sample that sends the user's search query to the
 `garethpaul-app.appspot.com` backend and displays returned text and image data.
 
