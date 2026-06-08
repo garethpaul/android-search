@@ -1,5 +1,8 @@
 ## Android Search Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 Android Search is a legacy Android instant-search sample. It accepts an Android
 search intent, queries a small HTTPS API, displays returned text, and downloads
 an image for the result.
