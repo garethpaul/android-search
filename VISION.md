@@ -41,7 +41,7 @@ unnecessary logging, or broader network transmission of query text.
 Endpoint changes should use HTTPS and make timeout and failure behavior clear to
 users and maintainers.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - New remote services without response docs and failure handling
 - Networking rewrites mixed with UI redesigns
