@@ -39,7 +39,6 @@ Canonical security policy and reporting:
 
 - [`SECURITY.md`](SECURITY.md)
 
-
 Search queries can contain personal information. Do not add analytics,
 unnecessary logging, or broader network transmission of query text.
 
