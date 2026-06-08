@@ -14,8 +14,15 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
+    static final String SEARCH_ENDPOINT = "https://garethpaul-app.appspot.com/api/search?q=";
+
+    static String buildSearchUrl(String query) throws UnsupportedEncodingException {
+        return SEARCH_ENDPOINT + URLEncoder.encode(query, "UTF-8");
+    }
 
     @Override
     protected JSONObject doInBackground(String... params) {
@@ -34,7 +41,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
 
             // Instantiate an HttpClient
             HttpClient httpclient = new DefaultHttpClient(p);
-            String url = "https://garethpaul-app.appspot.com/api/search?q=" + query;
+            String url = buildSearchUrl(query);
             Log.d("url", url);
             HttpGet httpget = new HttpGet(url);
 
