@@ -47,3 +47,6 @@ users and maintainers.
 - Networking rewrites mixed with UI redesigns
 - Query logging or analytics without an explicit privacy rationale
 - Build migrations that leave the sample unverifiable
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
