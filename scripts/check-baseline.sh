@@ -3,10 +3,12 @@ set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 NETWORK_REQUEST="$ROOT_DIR/app/src/main/java/gpj/androidsearch/NetworkRequest.java"
+MAIN_ACTIVITY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/MainActivity.java"
 APP_BUILD="$ROOT_DIR/app/build.gradle"
 ROOT_BUILD="$ROOT_DIR/build.gradle"
 LAYOUT="$ROOT_DIR/app/src/main/res/layout/activity_main.xml"
 README="$ROOT_DIR/README.md"
+RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -39,6 +41,56 @@ if grep -Fq '"https://garethpaul-app.appspot.com/api/search?q=" + query' "$NETWO
   exit 1
 fi
 
+if grep -Fq "query = params[0];" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must not index AsyncTask params without validation." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private static String queryFromParams(String... params)" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must centralize query parameter normalization." >&2
+  exit 1
+fi
+
+if ! grep -Fq "private static JSONObject errorResult(String message)" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must return explicit JSON errors." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'return errorResult("Search request failed");' "$NETWORK_REQUEST"; then
+  printf '%s\n' "Network failures must return an explicit error result." >&2
+  exit 1
+fi
+
+if ! grep -Fq "HttpConnectionParams.setConnectionTimeout(httpParams," "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must configure a connection timeout." >&2
+  exit 1
+fi
+
+if ! grep -Fq "HttpConnectionParams.setSoTimeout(httpParams, 1000)" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must configure a socket timeout." >&2
+  exit 1
+fi
+
+if ! grep -Fq "HttpClient httpclient = new DefaultHttpClient(httpParams);" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Configured HTTP parameters must be passed to DefaultHttpClient." >&2
+  exit 1
+fi
+
+if grep -Fq "new DefaultHttpClient(p)" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search request must not pass an unconfigured params object to DefaultHttpClient." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'json.optString("text"' "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search UI must tolerate missing text fields." >&2
+  exit 1
+fi
+
+if ! grep -Fq "if (textImage.length() > 0)" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search UI must not download empty image URLs." >&2
+  exit 1
+fi
+
 if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the SDK-free baseline check." >&2
   exit 1
@@ -49,8 +101,33 @@ if ! grep -Fq "Android build-tools 24.0.3" "$ROOT_DIR/README.md"; then
   exit 1
 fi
 
+if ! grep -Fq "configured 1-second connection and socket timeouts" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document the configured HTTP timeouts." >&2
+  exit 1
+fi
+
 if [ ! -f "$ROOT_DIR/CHANGES.md" ]; then
   printf '%s\n' "CHANGES.md is missing." >&2
+  exit 1
+fi
+
+if [ ! -f "$ROOT_DIR/Makefile" ]; then
+  printf '%s\n' "Makefile is missing." >&2
+  exit 1
+fi
+
+if [ ! -f "$RESPONSE_PLAN" ]; then
+  printf '%s\n' "Search response guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$RESPONSE_PLAN" || ! grep -Fq "make check" "$RESPONSE_PLAN"; then
+  printf '%s\n' "Search response guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must run the SDK-free baseline check." >&2
   exit 1
 fi
 
@@ -108,6 +185,11 @@ fi
 
 if ! grep -Fq "./gradlew assembleDebug --no-daemon" "$README"; then
   printf '%s\n' "README must document Gradle build verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$README"; then
+  printf '%s\n' "README must document the make check wrapper." >&2
   exit 1
 fi
 

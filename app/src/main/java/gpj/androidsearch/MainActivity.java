@@ -13,22 +13,18 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends Activity {
 
-    private JSONObject json;
-    private JSONArray results;
     private TextView textView;
 
     @Override
@@ -79,24 +75,28 @@ public class MainActivity extends Activity {
             NetworkRequest request = new NetworkRequest();
             request.execute(String.valueOf(query));
             try {
-                json = (JSONObject) request.get();
+                JSONObject json = (JSONObject) request.get();
                 //Log.v("json", json.toString());
-                String textInfo = (String) json.get("text");
+                if (json == null) {
+                    textView.setText(R.string.search_request_failed);
+                    return;
+                }
+                String textInfo = json.optString("text", getString(R.string.search_request_failed));
                 textView.setText(textInfo);
 
-                String textImage = (String) json.get("image");
-
-                new DownloadImageTask((ImageView) findViewById(R.id.imageView))
-                        .execute(textImage);
+                String textImage = json.optString("image", "");
+                if (textImage.length() > 0) {
+                    new DownloadImageTask((ImageView) findViewById(R.id.imageView))
+                            .execute(textImage);
+                }
 
 
                 } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 e.printStackTrace();
 
             } catch (ExecutionException e) {
                 e.printStackTrace();
-            } catch (JSONException e) {
-                  e.printStackTrace();
             }
         }
     }
@@ -109,20 +109,35 @@ public class MainActivity extends Activity {
         }
 
         protected Bitmap doInBackground(String... urls) {
+            if (urls == null || urls.length == 0 || urls[0].length() == 0) {
+                return null;
+            }
+
             String urldisplay = urls[0];
             Bitmap mIcon11 = null;
+            InputStream in = null;
             try {
-                InputStream in = new java.net.URL(urldisplay).openStream();
+                in = new java.net.URL(urldisplay).openStream();
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
                 Log.e("Error", e.getMessage());
                 e.printStackTrace();
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        Log.e("Error", e.getMessage());
+                    }
+                }
             }
             return mIcon11;
         }
 
         protected void onPostExecute(Bitmap result) {
-            bmImage.setImageBitmap(result);
+            if (result != null) {
+                bmImage.setImageBitmap(result);
+            }
         }
     }
 

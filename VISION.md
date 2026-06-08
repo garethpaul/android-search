@@ -21,6 +21,7 @@ Priority:
 - Keep the remote API behavior visible in source
 - Avoid broad changes to networking without documenting response expectations
 - Maintain a buildable Android Studio/Gradle project baseline
+- Maintain SDK-free `make check` coverage for network and response guardrails
 
 Next priorities:
 

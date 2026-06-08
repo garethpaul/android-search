@@ -7,6 +7,9 @@
 
 `garethpaul/android-search` is an Android application or sample. Android Instant Search
 
+This legacy Android search sample sends the user's query to the
+`garethpaul-app.appspot.com` backend and displays returned text and image data.
+
 This README is based on the checked-in source, manifests, scripts, and repository metadata on the `master` branch. The project language mix found during review was: Java (3), shell (1).
 
 ## Repository Contents
@@ -41,6 +44,11 @@ Additional scan context:
 ```bash
 git clone https://github.com/garethpaul/android-search.git
 cd android-search
+make check
+scripts/check-baseline.sh
+./gradlew lint --no-daemon
+./gradlew test --no-daemon
+./gradlew assembleDebug --no-daemon
 ```
 
 The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
@@ -51,13 +59,16 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `./gradlew test` or Android Studio's test runner when the SDK is configured
+- `make check` - runs the SDK-free source baseline checks.
+- `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
+- `./gradlew lint --no-daemon`, `./gradlew test --no-daemon`, and `./gradlew assembleDebug --no-daemon` when the Android SDK is configured.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
 ## Configuration and Secrets
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
+- This legacy Android baseline pins Android build-tools 24.0.3 and Android Gradle Plugin 1.2.3.
 
 ## Security and Privacy Notes
 
@@ -69,6 +80,19 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Maintenance Notes
 
 - This looks like a legacy Android project or sample. Expect Android SDK, Gradle, and support-library versions to matter.
+- The current baseline URL-encodes search queries before calling the backend,
+  normalizes missing query parameters, returns explicit JSON errors for failed
+  requests, uses configured 1-second connection and socket timeouts, uses HTTPS
+  Maven Central for dependency resolution, and pins build-tools to a
+  host-compatible version.
+- `app/lint.xml` suppresses only the obsolete lint API database error from this
+  old toolchain and the missing-density-folder warning for bitmap assets
+  intentionally kept in `drawable-nodpi`.
+- Future work should replace the deprecated Apache HTTP client and AsyncTask
+  flow, add testable request/response parsing, modernize SDK levels, and add
+  emulator or device coverage.
+- See `docs/plans/2026-06-08-search-response-guard-baseline.md` for the
+  response handling and SDK-free wrapper baseline.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 
