@@ -10,6 +10,7 @@
         <item name="android:textColorSecondary">#FFFFFF</item>
         <item name="android:textColorTertiary">#FFFFFF</item>
         <item name="android:actionBarWidgetTheme">@style/MyActionBarWidget</item>
+        <item name="android:windowBackground">@color/search_background</item>
     </style>
 
     <!-- ActionBar styles -->

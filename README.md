@@ -35,7 +35,8 @@ scripts/check-baseline.sh
 Then run Gradle after Android SDK configuration is available:
 
 ```sh
-ANDROID_HOME=/home/gjones/android-sdk ./gradlew tasks --no-daemon
+ANDROID_HOME=/home/gjones/android-sdk ./gradlew lint --no-daemon
+ANDROID_HOME=/home/gjones/android-sdk ./gradlew test --no-daemon
 ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon
 ```
 
@@ -46,6 +47,9 @@ If Gradle reports `SDK location not found`, configure `ANDROID_HOME` or
 
 The current baseline URL-encodes search queries before calling the backend,
 uses HTTPS Maven Central for dependency resolution, and pins build-tools to a
-host-compatible version. Future work should replace the deprecated Apache HTTP
-client and AsyncTask flow, add testable request/response parsing, modernize SDK
-levels, and add emulator or device coverage.
+host-compatible version. `app/lint.xml` suppresses only the obsolete lint API
+database error from this old toolchain and the missing-density-folder warning
+for bitmap assets intentionally kept in `drawable-nodpi`. Future work should
+replace the deprecated Apache HTTP client and AsyncTask flow, add testable
+request/response parsing, modernize SDK levels, and add emulator or device
+coverage.

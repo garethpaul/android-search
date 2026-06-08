@@ -6,6 +6,6 @@
         android:actionViewClass="android.widget.SearchView"
         android:icon="@drawable/search"
         android:showAsAction="always"
-        android:title="Search"/>
+        android:title="@string/search_hint"/>
 
 </menu>
