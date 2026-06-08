@@ -4,6 +4,17 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 NETWORK_REQUEST="$ROOT_DIR/app/src/main/java/gpj/androidsearch/NetworkRequest.java"
 APP_BUILD="$ROOT_DIR/app/build.gradle"
+ROOT_BUILD="$ROOT_DIR/build.gradle"
+
+if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
+  printf '%s\n' "Build repositories must use HTTPS Maven Central." >&2
+  exit 1
+fi
+
+if grep -Fq "jcenter()" "$ROOT_BUILD"; then
+  printf '%s\n' "Build repositories must not use JCenter." >&2
+  exit 1
+fi
 
 if ! grep -Fq 'buildToolsVersion "24.0.3"' "$APP_BUILD"; then
   printf '%s\n' "Android build-tools must stay pinned to 24.0.3 for 64-bit aapt." >&2
@@ -15,7 +26,7 @@ if ! grep -Fq 'static final String SEARCH_ENDPOINT = "https://garethpaul-app.app
   exit 1
 fi
 
-if ! grep -Fq 'URLEncoder.encode(query, "UTF-8")' "$NETWORK_REQUEST"; then
+if ! grep -Fq 'URLEncoder.encode(String.valueOf(query), "UTF-8")' "$NETWORK_REQUEST"; then
   printf '%s\n' "Search query must be URL-encoded with UTF-8." >&2
   exit 1
 fi

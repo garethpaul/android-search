@@ -21,7 +21,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
     static final String SEARCH_ENDPOINT = "https://garethpaul-app.appspot.com/api/search?q=";
 
     static String buildSearchUrl(String query) throws UnsupportedEncodingException {
-        return SEARCH_ENDPOINT + URLEncoder.encode(query, "UTF-8");
+        return SEARCH_ENDPOINT + URLEncoder.encode(String.valueOf(query), "UTF-8");
     }
 
     @Override

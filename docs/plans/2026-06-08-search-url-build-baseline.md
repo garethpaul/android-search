@@ -30,8 +30,9 @@ not run on this host, and the repository has no README or local baseline check.
 - R1. Search queries must be URL-encoded before being appended to the backend request URL.
 - R2. The backend endpoint and `q` parameter name must remain unchanged.
 - R3. The app must pin a host-compatible build-tools version while preserving compile SDK 22 and target SDK 22.
-- R4. The repository must include an SDK-free source check for request URL and build metadata drift.
-- R5. README documentation must explain the legacy Android toolchain and verification commands.
+- R4. Build repositories must use explicit HTTPS Maven Central URLs instead of JCenter.
+- R5. The repository must include an SDK-free source check for request URL and build metadata drift.
+- R6. README documentation must explain the legacy Android toolchain and verification commands.
 
 ---
 
@@ -43,6 +44,7 @@ not run on this host, and the repository has no README or local baseline check.
   the legacy Java/Android stack without new dependencies.
 - **Pin build-tools 24.0.3:** The installed 24.0.3 build-tools provide a 64-bit
   `aapt` that can assemble on this host.
+- **Use HTTPS Maven Central:** Android Gradle Plugin 1.2.3 resolves from Maven Central, so JCenter is unnecessary.
 - **Use source checks:** Shell checks can guard URL encoding and build metadata
   before emulator or device coverage exists.
 
@@ -65,7 +67,7 @@ not run on this host, and the repository has no README or local baseline check.
 - **Files:** `app/src/main/java/gpj/androidsearch/NetworkRequest.java`
 - **Patterns:** Keep `AsyncTask` and `DefaultHttpClient` behavior unchanged; route URL creation through a helper.
 - **Test Scenarios:**
-  - URL construction uses `URLEncoder.encode(query, "UTF-8")`.
+  - URL construction uses `URLEncoder.encode(String.valueOf(query), "UTF-8")`.
   - The endpoint remains `https://garethpaul-app.appspot.com/api/search?q=`.
   - Raw string concatenation with the unencoded query is absent.
 - **Verification:** `scripts/check-baseline.sh`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew assembleDebug --no-daemon`
@@ -73,10 +75,11 @@ not run on this host, and the repository has no README or local baseline check.
 ### U2. Stabilize Local Build Metadata
 
 - **Goal:** Let the app configure and assemble with the local Android SDK.
-- **Files:** `app/build.gradle`, `README.md`
+- **Files:** `build.gradle`, `app/build.gradle`, `README.md`
 - **Patterns:** Preserve compile SDK 22, target SDK 22, Gradle wrapper 2.2.1, and Android Gradle Plugin 1.2.3.
 - **Test Scenarios:**
   - `app/build.gradle` pins `buildToolsVersion "24.0.3"`.
+  - `build.gradle` uses `https://repo1.maven.org/maven2` and no `jcenter()`.
   - README documents build-tools 24.0.3.
 - **Verification:** `scripts/check-baseline.sh`, `ANDROID_HOME=/home/gjones/android-sdk ./gradlew tasks --no-daemon`
 
@@ -106,4 +109,5 @@ not run on this host, and the repository has no README or local baseline check.
 - `app/src/main/java/gpj/androidsearch/NetworkRequest.java` contains the backend request URL construction.
 - `app/src/main/java/gpj/androidsearch/MainActivity.java` handles Android search intents and response display.
 - `app/build.gradle` pins compile SDK 22, target SDK 22, and build-tools 22.0.1.
+- `build.gradle` originally used JCenter for plugin and dependency resolution.
 - `gradle/wrapper/gradle-wrapper.properties` pins Gradle 2.2.1.

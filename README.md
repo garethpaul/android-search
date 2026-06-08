@@ -44,7 +44,8 @@ If Gradle reports `SDK location not found`, configure `ANDROID_HOME` or
 
 ## Modernization Notes
 
-The current baseline URL-encodes search queries before calling the backend and
-pins build-tools to a host-compatible version. Future work should replace the
-deprecated Apache HTTP client and AsyncTask flow, add testable request/response
-parsing, modernize SDK levels, and add emulator or device coverage.
+The current baseline URL-encodes search queries before calling the backend,
+uses HTTPS Maven Central for dependency resolution, and pins build-tools to a
+host-compatible version. Future work should replace the deprecated Apache HTTP
+client and AsyncTask flow, add testable request/response parsing, modernize SDK
+levels, and add emulator or device coverage.
