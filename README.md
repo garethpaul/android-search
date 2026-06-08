@@ -1,5 +1,8 @@
 # android-search
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/android-search` is an Android application or sample. Android Instant Search
@@ -78,4 +81,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > Android Search <!-- README-OVERVIEW-IMAGE --> Legacy Android search sample that sends the user's search query to the `garethpaul-app.appspot.com` backend and displays returned text and image data. Toolchain This project currently uses the original Android build stack: - Gradle wrapper 2.2.1 - Android Gradle Plugin 1.2.3
-
