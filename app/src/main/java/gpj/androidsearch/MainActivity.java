@@ -93,37 +93,44 @@ public class MainActivity extends Activity {
     }
 
     private void handleIntent(Intent intent) {
+        if (intent == null) {
+            Log.w(LOG_TAG, "Search intent is unavailable");
+            return;
+        }
 
-        if (Intent.ACTION_SEARCH.equals(intent.getAction())) {
-            String query = intent.getStringExtra(SearchManager.QUERY);
-            //use the query to search your data somehow
-            //Log.d("query", query);
-            NetworkRequest request = new NetworkRequest();
-            request.execute(String.valueOf(query));
-            try {
-                JSONObject json = (JSONObject) request.get();
-                //Log.v("json", json.toString());
-                if (json == null) {
-                    textView.setText(R.string.search_request_failed);
-                    return;
-                }
-                String textInfo = json.optString("text", getString(R.string.search_request_failed));
-                textView.setText(textInfo);
+        if (!Intent.ACTION_SEARCH.equals(intent.getAction())) {
+            return;
+        }
 
-                String textImage = json.optString("image", "");
-                if (textImage.length() > 0) {
-                    new DownloadImageTask((ImageView) findViewById(R.id.imageView))
-                            .execute(textImage);
-                }
+        if (textView == null) {
+            Log.w(LOG_TAG, "Search result text view is unavailable");
+            return;
+        }
 
-
-                } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                Log.e(LOG_TAG, "Search task interrupted", e);
-
-            } catch (ExecutionException e) {
-                Log.e(LOG_TAG, "Search task failed", e);
+        String query = intent.getStringExtra(SearchManager.QUERY);
+        NetworkRequest request = new NetworkRequest();
+        request.execute(String.valueOf(query));
+        try {
+            JSONObject json = (JSONObject) request.get();
+            if (json == null) {
+                textView.setText(R.string.search_request_failed);
+                return;
             }
+            String textInfo = json.optString("text", getString(R.string.search_request_failed));
+            textView.setText(textInfo);
+
+            String textImage = json.optString("image", "");
+            if (textImage.length() > 0) {
+                ImageView imageView = (ImageView) findViewById(R.id.imageView);
+                if (imageView != null) {
+                    new DownloadImageTask(imageView).execute(textImage);
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            Log.e(LOG_TAG, "Search task interrupted", e);
+        } catch (ExecutionException e) {
+            Log.e(LOG_TAG, "Search task failed", e);
         }
     }
 

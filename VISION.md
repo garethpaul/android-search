@@ -28,6 +28,7 @@ Priority:
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable
 - Keep search menu setup tolerant of missing framework search UI components
+- Keep search intent handling tolerant of null intents and missing result views
 
 Next priorities:
 

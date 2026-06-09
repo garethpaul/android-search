@@ -65,7 +65,8 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make check` - runs the aggregate lint, test, and build gates.
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
-  wiring, optional image handling, and sensitive search log suppression.
+  wiring, optional image handling, search intent/result view null-safety, and
+  sensitive search log suppression.
 - `./gradlew lint --no-daemon`, `./gradlew test --no-daemon`, and `./gradlew assembleDebug --no-daemon` when the Android SDK is configured.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
@@ -80,6 +81,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the
   searchable configuration or replacing the search icon.
+- Search intent handling guards null intents and missing result views before
+  reading query extras or rendering returned data.
 
 ## Security and Privacy Notes
 
@@ -98,6 +101,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   host-compatible version.
 - Search request success paths avoid logging full query URLs or raw response
   bodies.
+- Search intent handling guards null intents and missing result views while
+  preserving the existing search action flow.
 - `app/lint.xml` suppresses only the obsolete lint API database error from this
   old toolchain and the missing-density-folder warning for bitmap assets
   intentionally kept in `drawable-nodpi`.
@@ -116,6 +121,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lint, test, and build gate contract.
 - See `docs/plans/2026-06-09-search-menu-null-safety.md` for the search menu
   setup null-safety contract.
+- See `docs/plans/2026-06-09-search-intent-ui-guard.md` for the search
+  intent and result view null-safety contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

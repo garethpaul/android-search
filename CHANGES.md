@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded search intent handling when the incoming intent or result text/image
+  views are unavailable.
 - Guarded search menu setup when the action item, search service, SearchView,
   or internal search icon view is unavailable.
 - Added root `make lint`, `make test`, and `make build` gates around the
