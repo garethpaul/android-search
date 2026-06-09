@@ -29,6 +29,7 @@ Priority:
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable
 - Keep search menu setup tolerant of missing framework search UI components
+- Keep search options callbacks tolerant of missing menu callback objects
 - Keep SearchView action-view wiring type-safe around menu resource drift
 - Keep SearchView wiring tolerant of missing searchable configuration
 - Keep search intent handling tolerant of null intents and missing result views

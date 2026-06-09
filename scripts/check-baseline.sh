@@ -15,6 +15,7 @@ INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
 SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
+OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -132,6 +133,8 @@ for pattern in \
 done
 
 for pattern in \
+  "if (menu == null)" \
+  "Search options menu is unavailable" \
   "MenuItem searchItem = menu.findItem(R.id.action_search);" \
   "if (searchItem == null)" \
   "if (searchManager == null)" \
@@ -163,6 +166,15 @@ for pattern in \
   "new DownloadImageTask(imageView).execute(textImage);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing search intent/UI guard: $pattern" >&2
+    exit 1
+  fi
+done
+
+for pattern in \
+  "if (item == null)" \
+  "Search options item is unavailable"; do
+  if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing search options callback guard: $pattern" >&2
     exit 1
   fi
 done
@@ -412,6 +424,16 @@ fi
 
 if ! grep -Fq "status: completed" "$ANDROID_BACKUP_PLAN" || ! grep -Fq "make check" "$ANDROID_BACKUP_PLAN"; then
   printf '%s\n' "Android backup opt-out plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$OPTIONS_CALLBACK_PLAN" ]; then
+  printf '%s\n' "Search options callback guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$OPTIONS_CALLBACK_PLAN" || ! grep -Fq "make check" "$OPTIONS_CALLBACK_PLAN"; then
+  printf '%s\n' "Search options callback guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 

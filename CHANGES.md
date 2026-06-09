@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded search options menu callbacks when Android supplies missing menu or
+  menu item objects.
 - Disabled Android app-data backup in the checked-in manifest and added
   SDK-free baseline coverage for the opt-out.
 - Type-checked the search menu action view before casting it to `SearchView` so
