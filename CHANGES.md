@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Type-checked the search menu action view before casting it to `SearchView` so
+  menu resource drift does not crash setup.
 - Guarded SearchView setup when the searchable configuration lookup is
   unavailable.
 - Guarded search intent handling when the incoming intent or result text/image

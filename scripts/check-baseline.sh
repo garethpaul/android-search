@@ -12,6 +12,7 @@ RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md
 IMAGE_DOWNLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-image-download-guard.md"
 INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
 SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
+SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -125,9 +126,12 @@ done
 for pattern in \
   "MenuItem searchItem = menu.findItem(R.id.action_search);" \
   "if (searchItem == null)" \
-  "SearchView searchView = (SearchView) searchItem.getActionView();" \
-  "if (searchManager == null || searchView == null)" \
+  "if (searchManager == null)" \
   "Search UI is unavailable" \
+  "View actionView = searchItem.getActionView();" \
+  "if (!(actionView instanceof SearchView))" \
+  "Search action view is unavailable" \
+  "SearchView searchView = (SearchView) actionView;" \
   "SearchableInfo searchableInfo = searchManager.getSearchableInfo(getComponentName());" \
   "if (searchableInfo == null)" \
   "Searchable configuration is unavailable" \
@@ -167,6 +171,11 @@ fi
 
 if grep -Fq "searchManager.getSearchableInfo(getComponentName()))" "$MAIN_ACTIVITY"; then
   printf '%s\n' "SearchView setup must guard missing searchable configuration." >&2
+  exit 1
+fi
+
+if grep -Fq "SearchView searchView = (SearchView) searchItem.getActionView();" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "SearchView setup must type-check action views before casting." >&2
   exit 1
 fi
 
@@ -358,6 +367,11 @@ if ! grep -Fq "Searchable configuration is checked before SearchView wiring" "$R
   exit 1
 fi
 
+if ! grep -Fq "Search action views are type-checked before SearchView casting" "$README"; then
+  printf '%s\n' "README must document search action-view type safety." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-search-menu-null-safety.md"; then
   printf '%s\n' "Search menu null-safety plan must document make check verification." >&2
   exit 1
@@ -365,6 +379,16 @@ fi
 
 if ! grep -Fq "make check" "$SEARCHABLE_INFO_PLAN"; then
   printf '%s\n' "Search searchable-info guard plan must document make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEARCH_ACTION_VIEW_PLAN" ]; then
+  printf '%s\n' "Search action-view type guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$SEARCH_ACTION_VIEW_PLAN" || ! grep -Fq "make check" "$SEARCH_ACTION_VIEW_PLAN"; then
+  printf '%s\n' "Search action-view type guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 

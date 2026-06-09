@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -75,12 +76,18 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        SearchView searchView = (SearchView) searchItem.getActionView();
-        if (searchManager == null || searchView == null) {
+        if (searchManager == null) {
             Log.w(LOG_TAG, "Search UI is unavailable");
             return true;
         }
 
+        View actionView = searchItem.getActionView();
+        if (!(actionView instanceof SearchView)) {
+            Log.w(LOG_TAG, "Search action view is unavailable");
+            return true;
+        }
+
+        SearchView searchView = (SearchView) actionView;
         SearchableInfo searchableInfo = searchManager.getSearchableInfo(getComponentName());
         if (searchableInfo == null) {
             Log.w(LOG_TAG, "Searchable configuration is unavailable");
