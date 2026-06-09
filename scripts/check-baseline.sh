@@ -9,6 +9,7 @@ ROOT_BUILD="$ROOT_DIR/build.gradle"
 LAYOUT="$ROOT_DIR/app/src/main/res/layout/activity_main.xml"
 README="$ROOT_DIR/README.md"
 RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md"
+IMAGE_DOWNLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-image-download-guard.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -101,6 +102,32 @@ if ! grep -Fq "if (textImage.length() > 0)" "$MAIN_ACTIVITY"; then
   exit 1
 fi
 
+for pattern in \
+  "private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000" \
+  "private static URL httpsImageUrl(String value) throws MalformedURLException" \
+  "equalsIgnoreCase(imageUrl.getProtocol())" \
+  "URLConnection connection = imageUrl.openConnection();" \
+  "connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
+  "connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
+  "in = connection.getInputStream();" \
+  "Log.e(LOG_TAG, \"Unable to download search image\", e);" \
+  "Log.e(LOG_TAG, \"Search task failed\", e);"; do
+  if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing image download guard: $pattern" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "new java.net.URL(urldisplay).openStream()" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search image downloads must not open unvalidated URLs directly." >&2
+  exit 1
+fi
+
+if grep -Fq "printStackTrace()" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search activity failures must use sanitized Android logging." >&2
+  exit 1
+fi
+
 if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the SDK-free baseline check." >&2
   exit 1
@@ -133,6 +160,16 @@ fi
 
 if ! grep -Fq "Status: Completed" "$RESPONSE_PLAN" || ! grep -Fq "make check" "$RESPONSE_PLAN"; then
   printf '%s\n' "Search response guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$IMAGE_DOWNLOAD_PLAN" ]; then
+  printf '%s\n' "Search image download guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$IMAGE_DOWNLOAD_PLAN" || ! grep -Fq "make check" "$IMAGE_DOWNLOAD_PLAN"; then
+  printf '%s\n' "Search image download guard plan must record completed status and make check verification." >&2
   exit 1
 fi
 

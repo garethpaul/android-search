@@ -21,9 +21,15 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends Activity {
+
+    private static final String LOG_TAG = "android_search";
+    private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000;
 
     private TextView textView;
 
@@ -93,10 +99,10 @@ public class MainActivity extends Activity {
 
                 } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                e.printStackTrace();
+                Log.e(LOG_TAG, "Search task interrupted", e);
 
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                Log.e(LOG_TAG, "Search task failed", e);
             }
         }
     }
@@ -109,25 +115,25 @@ public class MainActivity extends Activity {
         }
 
         protected Bitmap doInBackground(String... urls) {
-            if (urls == null || urls.length == 0 || urls[0].length() == 0) {
+            if (urls == null || urls.length == 0 || urls[0] == null
+                    || urls[0].trim().length() == 0) {
                 return null;
             }
 
-            String urldisplay = urls[0];
             Bitmap mIcon11 = null;
             InputStream in = null;
             try {
+                String urldisplay = urls[0];
                 in = new java.net.URL(urldisplay).openStream();
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
-                Log.e("Error", e.getMessage());
-                e.printStackTrace();
+                Log.e(LOG_TAG, "Unable to download search image", e);
             } finally {
                 if (in != null) {
                     try {
                         in.close();
                     } catch (IOException e) {
-                        Log.e("Error", e.getMessage());
+                        Log.e(LOG_TAG, "Unable to close search image stream", e);
                     }
                 }
             }
@@ -139,6 +145,15 @@ public class MainActivity extends Activity {
                 bmImage.setImageBitmap(result);
             }
         }
+    }
+
+    private static URL httpsImageUrl(String value) throws MalformedURLException {
+        URL imageUrl = new URL(value);
+        if (!"https".equalsIgnoreCase(imageUrl.getProtocol())) {
+            throw new MalformedURLException("Search image URLs must use HTTPS");
+        }
+
+        return imageUrl;
     }
 
 

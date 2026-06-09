@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Added HTTPS validation and bounded connection/read timeouts for search result
+  image downloads, with SDK-free checks against direct unvalidated URL opens.
+
 ## 2026-06-08
 
 - Added explicit search request failure handling so missing parameters,
