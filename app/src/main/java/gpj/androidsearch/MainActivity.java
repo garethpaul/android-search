@@ -3,6 +3,7 @@ package gpj.androidsearch;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.SearchManager;
+import android.app.SearchableInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -80,8 +81,13 @@ public class MainActivity extends Activity {
             return true;
         }
 
-        searchView.setSearchableInfo(
-                searchManager.getSearchableInfo(getComponentName()));
+        SearchableInfo searchableInfo = searchManager.getSearchableInfo(getComponentName());
+        if (searchableInfo == null) {
+            Log.w(LOG_TAG, "Searchable configuration is unavailable");
+            return true;
+        }
+
+        searchView.setSearchableInfo(searchableInfo);
 
         int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
         ImageView v = (ImageView) searchView.findViewById(searchImgId);

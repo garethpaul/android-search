@@ -11,6 +11,7 @@ README="$ROOT_DIR/README.md"
 RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md"
 IMAGE_DOWNLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-image-download-guard.md"
 INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
+SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -127,6 +128,10 @@ for pattern in \
   "SearchView searchView = (SearchView) searchItem.getActionView();" \
   "if (searchManager == null || searchView == null)" \
   "Search UI is unavailable" \
+  "SearchableInfo searchableInfo = searchManager.getSearchableInfo(getComponentName());" \
+  "if (searchableInfo == null)" \
+  "Searchable configuration is unavailable" \
+  "searchView.setSearchableInfo(searchableInfo);" \
   "if (v != null)" \
   "v.setImageResource(R.drawable.cross);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
@@ -157,6 +162,11 @@ fi
 
 if grep -Fq "new DownloadImageTask((ImageView) findViewById(R.id.imageView))" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search image tasks must guard nullable result image views." >&2
+  exit 1
+fi
+
+if grep -Fq "searchManager.getSearchableInfo(getComponentName()))" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "SearchView setup must guard missing searchable configuration." >&2
   exit 1
 fi
 
@@ -343,8 +353,18 @@ if ! grep -Fq "Search intent handling guards null intents and missing result vie
   exit 1
 fi
 
+if ! grep -Fq "Searchable configuration is checked before SearchView wiring" "$README"; then
+  printf '%s\n' "README must document searchable configuration null-safety." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-search-menu-null-safety.md"; then
   printf '%s\n' "Search menu null-safety plan must document make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$SEARCHABLE_INFO_PLAN"; then
+  printf '%s\n' "Search searchable-info guard plan must document make check verification." >&2
   exit 1
 fi
 

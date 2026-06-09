@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Guarded SearchView setup when the searchable configuration lookup is
+  unavailable.
 - Guarded search intent handling when the incoming intent or result text/image
   views are unavailable.
 - Guarded search menu setup when the action item, search service, SearchView,

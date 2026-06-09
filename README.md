@@ -81,6 +81,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the
   searchable configuration or replacing the search icon.
+- Searchable configuration is checked before SearchView wiring so manifest or
+  searchable-resource drift does not crash menu setup.
 - Search intent handling guards null intents and missing result views before
   reading query extras or rendering returned data.
 
@@ -121,6 +123,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   lint, test, and build gate contract.
 - See `docs/plans/2026-06-09-search-menu-null-safety.md` for the search menu
   setup null-safety contract.
+- See `docs/plans/2026-06-09-search-searchable-info-guard.md` for the
+  searchable configuration null-safety contract.
 - See `docs/plans/2026-06-09-search-intent-ui-guard.md` for the search
   intent and result view null-safety contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
