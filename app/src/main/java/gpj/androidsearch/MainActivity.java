@@ -123,8 +123,11 @@ public class MainActivity extends Activity {
             Bitmap mIcon11 = null;
             InputStream in = null;
             try {
-                String urldisplay = urls[0];
-                in = new java.net.URL(urldisplay).openStream();
+                URL imageUrl = httpsImageUrl(urls[0].trim());
+                URLConnection connection = imageUrl.openConnection();
+                connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
+                connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
+                in = connection.getInputStream();
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
                 Log.e(LOG_TAG, "Unable to download search image", e);
