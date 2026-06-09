@@ -107,6 +107,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
   bodies.
 - Search intent handling guards null intents and missing result views while
   preserving the existing search action flow.
+- Android app-data backup is disabled by default for the search sample.
 - `app/lint.xml` suppresses only the obsolete lint API database error from this
   old toolchain and the missing-density-folder warning for bitmap assets
   intentionally kept in `drawable-nodpi`.
@@ -129,6 +130,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   searchable configuration null-safety contract.
 - See `docs/plans/2026-06-09-search-action-view-type-guard.md` for the search
   action-view type-safety contract.
+- See `docs/plans/2026-06-09-android-backup-opt-out.md` for the Android
+  app-data backup opt-out.
 - See `docs/plans/2026-06-09-search-intent-ui-guard.md` for the search
   intent and result view null-safety contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.

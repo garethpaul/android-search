@@ -25,6 +25,7 @@ Priority:
 - Keep root lint, test, and build gates wired to the Gradle project
 - Keep search queries and raw responses out of success-path device logs
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
+- Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable
 - Keep search menu setup tolerant of missing framework search UI components
@@ -44,6 +45,7 @@ Contribution rules:
 - One PR = one focused search, networking, or build change.
 - Keep the sample's query-to-result path easy to inspect.
 - Document endpoint or response-shape changes in repository docs.
+- Preserve Android backup opt-out when changing the manifest.
 - Verify UI behavior manually when changing search intent handling.
 
 ## Security And Privacy

@@ -6,6 +6,7 @@ NETWORK_REQUEST="$ROOT_DIR/app/src/main/java/gpj/androidsearch/NetworkRequest.ja
 MAIN_ACTIVITY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/MainActivity.java"
 APP_BUILD="$ROOT_DIR/app/build.gradle"
 ROOT_BUILD="$ROOT_DIR/build.gradle"
+MANIFEST="$ROOT_DIR/app/src/main/AndroidManifest.xml"
 LAYOUT="$ROOT_DIR/app/src/main/res/layout/activity_main.xml"
 README="$ROOT_DIR/README.md"
 RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md"
@@ -13,6 +14,7 @@ IMAGE_DOWNLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-image-download-guard
 INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
 SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
+ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -27,6 +29,12 @@ fi
 
 if ! grep -Fq 'buildToolsVersion "24.0.3"' "$APP_BUILD"; then
   printf '%s\n' "Android build-tools must stay pinned to 24.0.3 for 64-bit aapt." >&2
+  exit 1
+fi
+
+if grep -Fq 'android:allowBackup="true"' "$MANIFEST" ||
+  ! grep -Fq 'android:allowBackup="false"' "$MANIFEST"; then
+  printf '%s\n' "Android manifest must explicitly disable app-data backup." >&2
   exit 1
 fi
 
@@ -372,6 +380,11 @@ if ! grep -Fq "Search action views are type-checked before SearchView casting" "
   exit 1
 fi
 
+if ! grep -Fq "Android app-data backup is disabled" "$README"; then
+  printf '%s\n' "README must document Android backup opt-out." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-search-menu-null-safety.md"; then
   printf '%s\n' "Search menu null-safety plan must document make check verification." >&2
   exit 1
@@ -389,6 +402,16 @@ fi
 
 if ! grep -Fq "status: completed" "$SEARCH_ACTION_VIEW_PLAN" || ! grep -Fq "make check" "$SEARCH_ACTION_VIEW_PLAN"; then
   printf '%s\n' "Search action-view type guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$ANDROID_BACKUP_PLAN" ]; then
+  printf '%s\n' "Android backup opt-out plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "status: completed" "$ANDROID_BACKUP_PLAN" || ! grep -Fq "make check" "$ANDROID_BACKUP_PLAN"; then
+  printf '%s\n' "Android backup opt-out plan must record completed status and make check verification." >&2
   exit 1
 fi
 

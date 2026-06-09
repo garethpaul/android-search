@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Disabled Android app-data backup in the checked-in manifest and added
+  SDK-free baseline coverage for the opt-out.
 - Type-checked the search menu action view before casting it to `SearchView` so
   menu resource drift does not crash setup.
 - Guarded SearchView setup when the searchable configuration lookup is
