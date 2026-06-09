@@ -68,14 +68,26 @@ public class MainActivity extends Activity {
         // Associate searchable configuration with the SearchView
         SearchManager searchManager =
                 (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        SearchView searchView =
-                (SearchView) menu.findItem(R.id.action_search).getActionView();
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        if (searchItem == null) {
+            Log.w(LOG_TAG, "Search menu item is missing");
+            return true;
+        }
+
+        SearchView searchView = (SearchView) searchItem.getActionView();
+        if (searchManager == null || searchView == null) {
+            Log.w(LOG_TAG, "Search UI is unavailable");
+            return true;
+        }
+
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));
 
         int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
         ImageView v = (ImageView) searchView.findViewById(searchImgId);
-        v.setImageResource(R.drawable.cross);
+        if (v != null) {
+            v.setImageResource(R.drawable.cross);
+        }
         
         return true;
     }

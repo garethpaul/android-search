@@ -78,6 +78,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   timeouts before decoding the bitmap.
 - The search activity guards nullable ActionBar setup before applying icon and
   home presentation.
+- Search menu setup guards missing framework search UI pieces before wiring the
+  searchable configuration or replacing the search icon.
 
 ## Security and Privacy Notes
 
@@ -112,6 +114,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   ActionBar startup guard.
 - See `docs/plans/2026-06-09-search-make-gate-targets.md` for the root
   lint, test, and build gate contract.
+- See `docs/plans/2026-06-09-search-menu-null-safety.md` for the search menu
+  setup null-safety contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

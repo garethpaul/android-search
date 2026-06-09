@@ -27,6 +27,7 @@ Priority:
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable
+- Keep search menu setup tolerant of missing framework search UI components
 
 Next priorities:
 

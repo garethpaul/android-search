@@ -102,6 +102,11 @@ if grep -Fq "getActionBar().set" "$MAIN_ACTIVITY"; then
   exit 1
 fi
 
+if grep -Fq "menu.findItem(R.id.action_search).getActionView()" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search menu setup must not chain through nullable search menu items." >&2
+  exit 1
+fi
+
 for pattern in \
   "private void configureActionBar()" \
   "ActionBar actionBar = getActionBar();" \
@@ -111,6 +116,20 @@ for pattern in \
   "actionBar.setIcon(R.drawable.search);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing search ActionBar guard: $pattern" >&2
+    exit 1
+  fi
+done
+
+for pattern in \
+  "MenuItem searchItem = menu.findItem(R.id.action_search);" \
+  "if (searchItem == null)" \
+  "SearchView searchView = (SearchView) searchItem.getActionView();" \
+  "if (searchManager == null || searchView == null)" \
+  "Search UI is unavailable" \
+  "if (v != null)" \
+  "v.setImageResource(R.drawable.cross);"; do
+  if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing search menu guard: $pattern" >&2
     exit 1
   fi
 done
@@ -275,6 +294,16 @@ fi
 
 if ! grep -Fq "make check" "$README"; then
   printf '%s\n' "README must document the make check wrapper." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Search menu setup guards missing framework search UI pieces" "$README"; then
+  printf '%s\n' "README must document search menu null-safety." >&2
+  exit 1
+fi
+
+if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-search-menu-null-safety.md"; then
+  printf '%s\n' "Search menu null-safety plan must document make check verification." >&2
   exit 1
 fi
 
