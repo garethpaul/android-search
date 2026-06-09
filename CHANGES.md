@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Added root `make lint`, `make test`, and `make build` gates around the
+  existing SDK-free and Gradle verification commands.
 - Added HTTPS validation and bounded connection/read timeouts for search result
   image downloads, with SDK-free checks against direct unvalidated URL opens.
 - Guarded nullable ActionBar setup before applying search icon and home

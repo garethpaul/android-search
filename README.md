@@ -59,7 +59,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `make check` - runs the SDK-free source baseline checks.
+- `make lint` - runs the SDK-free baseline and Gradle lint when the Android SDK is configured.
+- `make test` - runs Gradle tests when the Android SDK is configured.
+- `make build` - runs debug assembly when the Android SDK is configured.
+- `make check` - runs the aggregate lint, test, and build gates.
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
   wiring, optional image handling, and sensitive search log suppression.
@@ -107,6 +110,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   image download guard.
 - See `docs/plans/2026-06-09-search-actionbar-guard.md` for the nullable
   ActionBar startup guard.
+- See `docs/plans/2026-06-09-search-make-gate-targets.md` for the root
+  lint, test, and build gate contract.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

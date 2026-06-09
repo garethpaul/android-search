@@ -22,6 +22,7 @@ Priority:
 - Avoid broad changes to networking without documenting response expectations
 - Maintain a buildable Android Studio/Gradle project baseline
 - Maintain SDK-free `make check` coverage for network and response guardrails
+- Keep root lint, test, and build gates wired to the Gradle project
 - Keep search queries and raw responses out of success-path device logs
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
 - Keep search activity startup safe when legacy ActionBar presentation is
