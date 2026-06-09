@@ -4,6 +4,8 @@
 
 - Added HTTPS validation and bounded connection/read timeouts for search result
   image downloads, with SDK-free checks against direct unvalidated URL opens.
+- Guarded nullable ActionBar setup before applying search icon and home
+  presentation.
 
 ## 2026-06-08
 

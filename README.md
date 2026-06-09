@@ -73,6 +73,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - This legacy Android baseline pins Android build-tools 24.0.3 and Android Gradle Plugin 1.2.3.
 - Search result image downloads require HTTPS and bounded connection/read
   timeouts before decoding the bitmap.
+- The search activity guards nullable ActionBar setup before applying icon and
+  home presentation.
 
 ## Security and Privacy Notes
 
@@ -103,6 +105,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   query logging privacy contract.
 - See `docs/plans/2026-06-09-search-image-download-guard.md` for the HTTPS
   image download guard.
+- See `docs/plans/2026-06-09-search-actionbar-guard.md` for the nullable
+  ActionBar startup guard.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

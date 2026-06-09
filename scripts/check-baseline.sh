@@ -97,6 +97,24 @@ if ! grep -Fq 'json.optString("text"' "$MAIN_ACTIVITY"; then
   exit 1
 fi
 
+if grep -Fq "getActionBar().set" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search activity must guard nullable getActionBar() results." >&2
+  exit 1
+fi
+
+for pattern in \
+  "private void configureActionBar()" \
+  "ActionBar actionBar = getActionBar();" \
+  "if (actionBar == null)" \
+  "actionBar.setDisplayHomeAsUpEnabled(false);" \
+  "actionBar.setDisplayShowHomeEnabled(true);" \
+  "actionBar.setIcon(R.drawable.search);"; do
+  if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing search ActionBar guard: $pattern" >&2
+    exit 1
+  fi
+done
+
 if ! grep -Fq "if (textImage.length() > 0)" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search UI must not download empty image URLs." >&2
   exit 1

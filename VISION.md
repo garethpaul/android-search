@@ -24,6 +24,8 @@ Priority:
 - Maintain SDK-free `make check` coverage for network and response guardrails
 - Keep search queries and raw responses out of success-path device logs
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
+- Keep search activity startup safe when legacy ActionBar presentation is
+  unavailable
 
 Next priorities:
 

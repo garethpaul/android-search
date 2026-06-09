@@ -38,11 +38,19 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = (TextView) findViewById(R.id.textView);
+        configureActionBar();
+        handleIntent(getIntent());
+    }
+
+    private void configureActionBar() {
         ActionBar actionBar = getActionBar();
+        if (actionBar == null) {
+            return;
+        }
+
         actionBar.setDisplayHomeAsUpEnabled(false);
         actionBar.setDisplayShowHomeEnabled(true);
         actionBar.setIcon(R.drawable.search);
-        handleIntent(getIntent());
     }
 
     @Override
