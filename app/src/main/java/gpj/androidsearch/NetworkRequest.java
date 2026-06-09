@@ -59,7 +59,6 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
             // Instantiate an HttpClient
             HttpClient httpclient = new DefaultHttpClient(httpParams);
             String url = buildSearchUrl(query);
-            Log.d("url", url);
             HttpGet httpget = new HttpGet(url);
 
             try {
@@ -69,7 +68,6 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
 
                 String responseBody = httpclient.execute(httpget,
                         responseHandler);
-                Log.v("network_request", responseBody);
                 JSONObject json = new JSONObject(responseBody);
                 Log.v("network_request", "got json");
 

@@ -76,6 +76,16 @@ if ! grep -Fq "HttpClient httpclient = new DefaultHttpClient(httpParams);" "$NET
   exit 1
 fi
 
+if grep -Fq 'Log.d("url", url)' "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search requests must not log full URLs with user queries." >&2
+  exit 1
+fi
+
+if grep -Fq 'Log.v("network_request", responseBody)' "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search requests must not log raw response bodies." >&2
+  exit 1
+fi
+
 if grep -Fq "new DefaultHttpClient(p)" "$NETWORK_REQUEST"; then
   printf '%s\n' "Search request must not pass an unconfigured params object to DefaultHttpClient." >&2
   exit 1

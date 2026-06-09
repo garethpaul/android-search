@@ -17,3 +17,5 @@
   JSON error results, configured HTTP timeouts, optional response fields, and
   empty image URLs.
 - Added `make check` as the SDK-free verification wrapper.
+- Removed full query URL and raw response-body logging from successful search
+  requests.

@@ -22,6 +22,7 @@ Priority:
 - Avoid broad changes to networking without documenting response expectations
 - Maintain a buildable Android Studio/Gradle project baseline
 - Maintain SDK-free `make check` coverage for network and response guardrails
+- Keep search queries and raw responses out of success-path device logs
 
 Next priorities:
 
