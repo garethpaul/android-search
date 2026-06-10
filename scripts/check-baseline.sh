@@ -102,14 +102,29 @@ fi
 
 for async_contract in \
   "if (query == null || query.trim().length() == 0)" \
-  "NetworkRequest request = new NetworkRequest()" \
+  "activeSearchRequest = new NetworkRequest()" \
   "protected void onPostExecute(JSONObject json)" \
-  "if (isFinishing() || isDestroyed())" \
+  "if (activeSearchRequest != this || isFinishing() || isDestroyed())" \
   "displaySearchResult(json);" \
-  "request.execute(query.trim());" \
+  "activeSearchRequest.execute(query.trim());" \
   "private void displaySearchResult(JSONObject json)"; do
   if ! grep -Fq "$async_contract" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing asynchronous search contract: $async_contract" >&2
+    exit 1
+  fi
+done
+
+for ownership_contract in \
+  "private NetworkRequest activeSearchRequest;" \
+  "private DownloadImageTask activeImageRequest;" \
+  "cancelActiveRequests();" \
+  "activeSearchRequest.cancel(true);" \
+  "activeImageRequest.cancel(true);" \
+  "if (activeImageRequest != this || isFinishing() || isDestroyed())" \
+  "imageView.setImageDrawable(null);" \
+  "protected void onPause()"; do
+  if ! grep -Fq "$ownership_contract" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing search result ownership contract: $ownership_contract" >&2
     exit 1
   fi
 done
@@ -188,7 +203,7 @@ for pattern in \
   "Search result text view is unavailable" \
   "ImageView imageView = (ImageView) findViewById(R.id.imageView);" \
   "if (imageView != null)" \
-  "new DownloadImageTask(imageView).execute(textImage);"; do
+  "activeImageRequest = new DownloadImageTask(imageView);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing search intent/UI guard: $pattern" >&2
     exit 1
@@ -224,7 +239,7 @@ if grep -Fq "SearchView searchView = (SearchView) searchItem.getActionView();" "
   exit 1
 fi
 
-if ! grep -Fq "if (textImage.length() > 0)" "$MAIN_ACTIVITY"; then
+if ! grep -Fq "if (textImage.length() > 0 && imageView != null)" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search UI must not download empty image URLs." >&2
   exit 1
 fi
@@ -462,6 +477,11 @@ if ! grep -Fq "Android app-data backup is disabled" "$README"; then
   exit 1
 fi
 
+if ! grep -Fq "Superseded search and image tasks are cancelled" "$README"; then
+  printf '%s\n' "README must document active search result ownership." >&2
+  exit 1
+fi
+
 if ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-09-search-menu-null-safety.md"; then
   printf '%s\n' "Search menu null-safety plan must document make check verification." >&2
   exit 1
@@ -499,6 +519,12 @@ fi
 
 if ! grep -Fq "Status: Completed" "$OPTIONS_CALLBACK_PLAN" || ! grep -Fq "make check" "$OPTIONS_CALLBACK_PLAN"; then
   printf '%s\n' "Search options callback guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$ROOT_DIR/docs/plans/2026-06-10-search-result-ownership.md" || \
+   ! grep -Fq "make check" "$ROOT_DIR/docs/plans/2026-06-10-search-result-ownership.md"; then
+  printf '%s\n' "Search result ownership plan must record completed status and make check verification." >&2
   exit 1
 fi
 

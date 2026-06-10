@@ -35,6 +35,7 @@ Priority:
 - Keep search intent handling tolerant of null intents and missing result views
 - Keep network completion asynchronous and ignore results after activity
   teardown
+- Keep search and image results owned by the latest active request
 - Keep the SDK-free `make check` baseline running in GitHub Actions
 
 Next priorities:

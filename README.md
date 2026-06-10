@@ -103,6 +103,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   completion callback instead of blocking the activity thread on `get()`.
 - Late search callbacks are ignored after the activity is finishing or
   destroyed.
+- Superseded search and image tasks are cancelled, completion callbacks must
+  still own the active request slot, and old images are cleared before new
+  results render.
 
 ## Security and Privacy Notes
 

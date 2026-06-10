@@ -33,6 +33,8 @@ public class MainActivity extends Activity {
     private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000;
 
     private TextView textView;
+    private NetworkRequest activeSearchRequest;
+    private DownloadImageTask activeImageRequest;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -125,28 +127,34 @@ public class MainActivity extends Activity {
         }
 
         String query = intent.getStringExtra(SearchManager.QUERY);
+        cancelActiveRequests();
+        clearResultImage();
         if (query == null || query.trim().length() == 0) {
             textView.setText(R.string.search_request_failed);
             return;
         }
 
-        NetworkRequest request = new NetworkRequest() {
+        activeSearchRequest = new NetworkRequest() {
             @Override
             protected void onPostExecute(JSONObject json) {
-                if (isFinishing() || isDestroyed()) {
+                if (activeSearchRequest != this || isFinishing() || isDestroyed()) {
                     return;
                 }
 
+                activeSearchRequest = null;
                 displaySearchResult(json);
             }
         };
-        request.execute(query.trim());
+        activeSearchRequest.execute(query.trim());
     }
 
     private void displaySearchResult(JSONObject json) {
         if (textView == null) {
             return;
         }
+
+        cancelActiveImageRequest();
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
 
         if (json == null) {
             textView.setText(R.string.search_request_failed);
@@ -157,11 +165,31 @@ public class MainActivity extends Activity {
         textView.setText(textInfo);
 
         String textImage = json.optString("image", "");
-        if (textImage.length() > 0) {
-            ImageView imageView = (ImageView) findViewById(R.id.imageView);
-            if (imageView != null) {
-                new DownloadImageTask(imageView).execute(textImage);
-            }
+        if (textImage.length() > 0 && imageView != null) {
+            activeImageRequest = new DownloadImageTask(imageView);
+            activeImageRequest.execute(textImage);
+        }
+    }
+
+    private void clearResultImage() {
+        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        if (imageView != null) {
+            imageView.setImageDrawable(null);
+        }
+    }
+
+    private void cancelActiveRequests() {
+        if (activeSearchRequest != null) {
+            activeSearchRequest.cancel(true);
+            activeSearchRequest = null;
+        }
+        cancelActiveImageRequest();
+    }
+
+    private void cancelActiveImageRequest() {
+        if (activeImageRequest != null) {
+            activeImageRequest.cancel(true);
+            activeImageRequest = null;
         }
     }
 
@@ -202,6 +230,11 @@ public class MainActivity extends Activity {
         }
 
         protected void onPostExecute(Bitmap result) {
+            if (activeImageRequest != this || isFinishing() || isDestroyed()) {
+                return;
+            }
+
+            activeImageRequest = null;
             if (result != null) {
                 bmImage.setImageBitmap(result);
             }
@@ -215,6 +248,12 @@ public class MainActivity extends Activity {
         }
 
         return imageUrl;
+    }
+
+    @Override
+    protected void onPause() {
+        cancelActiveRequests();
+        super.onPause();
     }
 
 

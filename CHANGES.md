@@ -4,6 +4,8 @@
 
 - Removed activity-thread blocking on `AsyncTask.get()`, rejected blank search
   queries, and ignored network callbacks after activity teardown.
+- Cancelled superseded query/image tasks, rejected stale completions, and
+  cleared prior images before rendering a new result.
 - Made root checks location-independent, accepted `ANDROID_SDK_ROOT`, and
   pinned CI to Ubuntu 24.04 with superseded-run cancellation.
 - Added pinned, read-only GitHub Actions that runs `make check` for the Android
