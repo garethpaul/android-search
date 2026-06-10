@@ -16,6 +16,7 @@ SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-gua
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -235,6 +236,36 @@ if ! grep -Fq "scripts/check-baseline.sh" "$ROOT_DIR/README.md"; then
   exit 1
 fi
 
+if [ ! -f "$ROOT_DIR/.github/workflows/check.yml" ]; then
+  printf '%s\n' "GitHub Actions check workflow is missing." >&2
+  exit 1
+fi
+
+for workflow_contract in \
+  "permissions:" \
+  "contents: read" \
+  "timeout-minutes: 5" \
+  "workflow_dispatch:" \
+  "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
+  'ANDROID_HOME: ""' \
+  'ANDROID_SDK_ROOT: ""' \
+  "make check"; do
+  if ! grep -Fq "$workflow_contract" "$ROOT_DIR/.github/workflows/check.yml"; then
+    printf '%s\n' "GitHub Actions check workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "/home/gjones" "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Makefile must not embed a maintainer-specific Android SDK path." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GitHub Actions" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document the GitHub Actions check." >&2
+  exit 1
+fi
+
 if ! grep -Fq "Android build-tools 24.0.3" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the pinned Android build-tools version." >&2
   exit 1
@@ -434,6 +465,16 @@ fi
 
 if ! grep -Fq "Status: Completed" "$OPTIONS_CALLBACK_PLAN" || ! grep -Fq "make check" "$OPTIONS_CALLBACK_PLAN"; then
   printf '%s\n' "Search options callback guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+if [ ! -f "$CI_PLAN" ]; then
+  printf '%s\n' "Search CI baseline plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$CI_PLAN" || ! grep -Fq "make check" "$CI_PLAN"; then
+  printf '%s\n' "Search CI baseline plan must record completed status and make check verification." >&2
   exit 1
 fi
 

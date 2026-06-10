@@ -20,6 +20,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 ## Repository Contents
 
 - `README.md` - project overview and local usage notes
+- `.github/workflows/check.yml` - GitHub Actions baseline for `make check`
 - `build.gradle` - Android or Gradle build configuration
 - `app` - source or example code
 - `docs` - source or example code
@@ -69,6 +70,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make build` - runs debug assembly when the Android SDK is configured.
 - `make check` - runs the aggregate lint, test, and build gates.
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
+- GitHub Actions runs `make check` on pushes and pull requests. On hosted
+  Linux runners without the legacy Android SDK, the SDK-free baseline still
+  runs and Gradle gates report clear skips.
+- Local Gradle checks require an explicit `ANDROID_HOME`; CI clears ambient SDK
+  variables to preserve the documented static-only boundary.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
   wiring, optional image handling, search intent/result view null-safety, and
   sensitive search log suppression.
@@ -139,6 +145,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   app-data backup opt-out.
 - See `docs/plans/2026-06-09-search-intent-ui-guard.md` for the search
   intent and result view null-safety contract.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
+  Actions baseline.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 
