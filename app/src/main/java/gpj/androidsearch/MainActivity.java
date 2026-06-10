@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.concurrent.ExecutionException;
 
 public class MainActivity extends Activity {
 
@@ -126,29 +125,43 @@ public class MainActivity extends Activity {
         }
 
         String query = intent.getStringExtra(SearchManager.QUERY);
-        NetworkRequest request = new NetworkRequest();
-        request.execute(String.valueOf(query));
-        try {
-            JSONObject json = (JSONObject) request.get();
-            if (json == null) {
-                textView.setText(R.string.search_request_failed);
-                return;
-            }
-            String textInfo = json.optString("text", getString(R.string.search_request_failed));
-            textView.setText(textInfo);
+        if (query == null || query.trim().length() == 0) {
+            textView.setText(R.string.search_request_failed);
+            return;
+        }
 
-            String textImage = json.optString("image", "");
-            if (textImage.length() > 0) {
-                ImageView imageView = (ImageView) findViewById(R.id.imageView);
-                if (imageView != null) {
-                    new DownloadImageTask(imageView).execute(textImage);
+        NetworkRequest request = new NetworkRequest() {
+            @Override
+            protected void onPostExecute(JSONObject json) {
+                if (isFinishing() || isDestroyed()) {
+                    return;
                 }
+
+                displaySearchResult(json);
             }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            Log.e(LOG_TAG, "Search task interrupted", e);
-        } catch (ExecutionException e) {
-            Log.e(LOG_TAG, "Search task failed", e);
+        };
+        request.execute(query.trim());
+    }
+
+    private void displaySearchResult(JSONObject json) {
+        if (textView == null) {
+            return;
+        }
+
+        if (json == null) {
+            textView.setText(R.string.search_request_failed);
+            return;
+        }
+
+        String textInfo = json.optString("text", getString(R.string.search_request_failed));
+        textView.setText(textInfo);
+
+        String textImage = json.optString("image", "");
+        if (textImage.length() > 0) {
+            ImageView imageView = (ImageView) findViewById(R.id.imageView);
+            if (imageView != null) {
+                new DownloadImageTask(imageView).execute(textImage);
+            }
         }
     }
 

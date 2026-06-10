@@ -2,6 +2,10 @@
 
 ## 2026-06-10
 
+- Removed activity-thread blocking on `AsyncTask.get()`, rejected blank search
+  queries, and ignored network callbacks after activity teardown.
+- Made root checks location-independent, accepted `ANDROID_SDK_ROOT`, and
+  pinned CI to Ubuntu 24.04 with superseded-run cancellation.
 - Added pinned, read-only GitHub Actions that runs `make check` for the Android
   Search baseline with explicit SDK-free execution.
 - Extended the SDK-free baseline to require the CI workflow and completed CI

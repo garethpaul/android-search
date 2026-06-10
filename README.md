@@ -72,9 +72,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
 - GitHub Actions runs `make check` on pushes and pull requests. On hosted
   Linux runners without the legacy Android SDK, the SDK-free baseline still
-  runs and Gradle gates report clear skips.
-- Local Gradle checks require an explicit `ANDROID_HOME`; CI clears ambient SDK
-  variables to preserve the documented static-only boundary.
+  runs and Gradle gates report clear skips. The workflow uses Ubuntu 24.04 and
+  cancels superseded runs.
+- Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`; CI clears
+  both variables to preserve the documented static-only boundary.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
   wiring, optional image handling, search intent/result view null-safety, and
   sensitive search log suppression.
@@ -98,6 +99,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
   searchable-resource drift does not crash menu setup.
 - Search intent handling guards null intents and missing result views before
   reading query extras or rendering returned data.
+- Search intents reject blank queries and render results from the asynchronous
+  completion callback instead of blocking the activity thread on `get()`.
+- Late search callbacks are ignored after the activity is finishing or
+  destroyed.
 
 ## Security and Privacy Notes
 

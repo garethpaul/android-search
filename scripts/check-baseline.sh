@@ -100,6 +100,30 @@ if grep -Fq 'Log.v("network_request", responseBody)' "$NETWORK_REQUEST"; then
   exit 1
 fi
 
+for async_contract in \
+  "if (query == null || query.trim().length() == 0)" \
+  "NetworkRequest request = new NetworkRequest()" \
+  "protected void onPostExecute(JSONObject json)" \
+  "if (isFinishing() || isDestroyed())" \
+  "displaySearchResult(json);" \
+  "request.execute(query.trim());" \
+  "private void displaySearchResult(JSONObject json)"; do
+  if ! grep -Fq "$async_contract" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing asynchronous search contract: $async_contract" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "request.get()" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search handling must not block the activity thread on AsyncTask.get()." >&2
+  exit 1
+fi
+
+if grep -Eq "InterruptedException|ExecutionException" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search activity must not keep blocking-task exception handling." >&2
+  exit 1
+fi
+
 if grep -Fq "new DefaultHttpClient(p)" "$NETWORK_REQUEST"; then
   printf '%s\n' "Search request must not pass an unconfigured params object to DefaultHttpClient." >&2
   exit 1
@@ -213,8 +237,7 @@ for pattern in \
   "connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "in = connection.getInputStream();" \
-  "Log.e(LOG_TAG, \"Unable to download search image\", e);" \
-  "Log.e(LOG_TAG, \"Search task failed\", e);"; do
+  "Log.e(LOG_TAG, \"Unable to download search image\", e);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing image download guard: $pattern" >&2
     exit 1
@@ -244,6 +267,8 @@ fi
 for workflow_contract in \
   "permissions:" \
   "contents: read" \
+  "runs-on: ubuntu-24.04" \
+  "cancel-in-progress: true" \
   "timeout-minutes: 5" \
   "workflow_dispatch:" \
   "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" \
@@ -252,6 +277,15 @@ for workflow_contract in \
   "make check"; do
   if ! grep -Fq "$workflow_contract" "$ROOT_DIR/.github/workflows/check.yml"; then
     printf '%s\n' "GitHub Actions check workflow must keep contract: $workflow_contract" >&2
+    exit 1
+  fi
+done
+
+for make_contract in \
+  'ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))' \
+  'ANDROID_SDK := $(if $(ANDROID_HOME),$(ANDROID_HOME),$(ANDROID_SDK_ROOT))'; do
+  if ! grep -Fq "$make_contract" "$ROOT_DIR/Makefile"; then
+    printf '%s\n' "Makefile must keep contract: $make_contract" >&2
     exit 1
   fi
 done

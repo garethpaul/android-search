@@ -33,6 +33,8 @@ Priority:
 - Keep SearchView action-view wiring type-safe around menu resource drift
 - Keep SearchView wiring tolerant of missing searchable configuration
 - Keep search intent handling tolerant of null intents and missing result views
+- Keep network completion asynchronous and ignore results after activity
+  teardown
 - Keep the SDK-free `make check` baseline running in GitHub Actions
 
 Next priorities:
