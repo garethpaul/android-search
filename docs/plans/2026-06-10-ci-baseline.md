@@ -27,6 +27,10 @@ query/privacy, UI guard, and Android backup contracts are checked before review.
 - Extended `scripts/check-baseline.sh` to require the CI workflow and this
   completed plan.
 - Updated README, VISION, SECURITY, and CHANGES with the CI baseline.
+- Disabled persisted checkout credentials and replaced partial string matching
+  with a canonical single-workflow contract.
+- Added self-protecting CODEOWNERS coverage for CI controls and application
+  source; repository rules remain responsible for requiring owner approval.
 
 ## Verification
 

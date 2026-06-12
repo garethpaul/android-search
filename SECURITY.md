@@ -34,6 +34,11 @@ Helpful reports include:
 - Pinned, read-only GitHub Actions runs the guarded `make check` baseline;
   review workflow, Gradle, and checker changes as part of the supply-chain
   surface.
+- Hosted checkout credentials are not persisted. Self-protecting CODEOWNERS
+  assigns CI controls and privacy-sensitive application source to the repository
+  owner; repository rules should require that approval.
+- `check.yml` remains the only approved workflow until another workflow
+  receives an explicit least-privilege security contract.
 
 ## Mobile Privacy Notes
 
