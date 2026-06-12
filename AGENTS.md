@@ -50,6 +50,9 @@
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
 - This legacy Android baseline pins Android build-tools 24.0.3 and Android Gradle Plugin 1.2.3.
 - Search result image downloads require HTTPS and bounded connection/read timeouts before decoding the bitmap.
+- Search request HTTP clients must shut down their connection managers in a
+  `finally` path so success, error-status, empty-body, and exception responses
+  release sockets deterministically.
 - The search activity guards nullable ActionBar setup before applying icon and home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the searchable configuration or replacing the search icon.
 - Search action views are type-checked before SearchView casting so menu resource drift does not crash setup.

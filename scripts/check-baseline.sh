@@ -16,6 +16,7 @@ SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-gua
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
+HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
@@ -104,6 +105,33 @@ fi
 
 if ! grep -Fq "private static JSONObject errorResult(String message)" "$NETWORK_REQUEST"; then
   printf '%s\n' "Search request must return explicit JSON errors." >&2
+  exit 1
+fi
+
+HTTP_CLIENT_SCOPE=$(sed -n \
+  '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (Throwable t)/p' \
+  "$NETWORK_REQUEST")
+HTTP_CLIENT_FINALLY=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | sed -n '/} finally {/,/^            }/p')
+if [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "new DefaultHttpClient(httpParams)")" -ne 1 ] || \
+   [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "httpclient.getConnectionManager().shutdown();")" -ne 1 ] || \
+   ! printf '%s\n' "$HTTP_CLIENT_FINALLY" | grep -Fq "httpclient.getConnectionManager().shutdown();"; then
+  printf '%s\n' "Search HTTP client must shut down exactly once from its finally block." >&2
+  exit 1
+fi
+
+execute_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "httpclient.execute(" | cut -d: -f1)
+finally_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "} finally {" | cut -d: -f1)
+shutdown_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "httpclient.getConnectionManager().shutdown();" | cut -d: -f1)
+if [ -z "$execute_line" ] || [ -z "$finally_line" ] || [ -z "$shutdown_line" ] || \
+   [ "$execute_line" -ge "$finally_line" ] || [ "$finally_line" -ge "$shutdown_line" ]; then
+  printf '%s\n' "Search HTTP client cleanup must follow request execution through finally." >&2
+  exit 1
+fi
+
+if [ ! -f "$HTTP_CLIENT_CLEANUP_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$HTTP_CLIENT_CLEANUP_PLAN" || \
+   ! grep -Fq "make check" "$HTTP_CLIENT_CLEANUP_PLAN"; then
+  printf '%s\n' "Search HTTP client cleanup plan must record completed make check verification." >&2
   exit 1
 fi
 
@@ -352,6 +380,10 @@ if grep -Fq "/home/gjones" "$ROOT_DIR/Makefile"; then
   exit 1
 fi
 
+if ! grep -Fq "Search HTTP clients shut down their connection managers" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document search HTTP client cleanup." >&2
+  exit 1
+fi
 if ! grep -Fq "Android build-tools 24.0.3" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the pinned Android build-tools version." >&2
   exit 1
