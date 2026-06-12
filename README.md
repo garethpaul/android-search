@@ -65,12 +65,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make build` - runs debug assembly when the Android SDK is configured.
 - `make check` - runs the aggregate lint, test, and build gates.
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
-- GitHub Actions runs `make check` on pushes and pull requests. On hosted
-  Linux runners without the legacy Android SDK, the SDK-free baseline still
-  runs and Gradle gates report clear skips. The workflow uses Ubuntu 24.04 and
-  cancels superseded runs.
-- Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`; CI clears
-  both variables to preserve the documented static-only boundary.
+- GitHub Actions installs Android API 22 and build-tools 24.0.3 under Java 8,
+  then runs the complete `make check` gate on pushes and pull requests. The
+  workflow uses Ubuntu 24.04 and cancels superseded runs.
+- Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
   wiring, optional image handling, search intent/result view null-safety, and
   sensitive search log suppression.
@@ -124,9 +122,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Search intent handling guards null intents and missing result views while
   preserving the existing search action flow.
 - Android app-data backup is disabled by default for the search sample.
-- `app/lint.xml` suppresses only the obsolete lint API database error from this
-  old toolchain and the missing-density-folder warning for bitmap assets
-  intentionally kept in `drawable-nodpi`.
+- `app/lint.xml` suppresses the obsolete lint API database error, the
+  missing-density-folder warning for bitmap assets intentionally kept in
+  `drawable-nodpi`, and the deliberately deferred target-SDK modernization
+  warning. All other lint warnings fail the build.
 - Future work should replace the deprecated Apache HTTP client and AsyncTask
   flow, add testable request/response parsing, modernize SDK levels, and add
   emulator or device coverage.

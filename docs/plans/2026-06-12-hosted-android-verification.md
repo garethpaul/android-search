@@ -1,6 +1,6 @@
 # Hosted Android Verification
 
-## Status: Planned
+## Status: Implementation Complete; Hosted Verification Pending
 
 ## Context
 
@@ -19,8 +19,8 @@ network, privacy, and trust-boundary behavior.
 
 - Install Android API 22 and build-tools 24.0.3 before selecting Java 8.
 - Run canonical `make check` with a bounded timeout.
-- Keep `OldTargetApi` as the sole documented lint suppression and make every
-  other warning fatal.
+- Add `OldTargetApi` to the existing narrow legacy lint suppressions and make
+  every other warning fatal.
 - Select deterministic non-queued PNG crunching without skipping aapt
   validation.
 - Preserve immutable actions, read-only permissions, disabled checkout
@@ -29,12 +29,13 @@ network, privacy, and trust-boundary behavior.
 
 ## Verification
 
-- Run SDK-backed `make check` locally.
-- Run the complete gate from a fresh external clone.
-- Exercise focused hostile workflow, Gradle, lint, checker, documentation, and
-  plan-status mutations.
-- Pass `git diff --check`.
-- Require exact-head hosted verification before completion.
+- Passed SDK-backed `make check` locally with zero lint issues, both Gradle
+  unit-test variants, and debug assembly.
+- Passed the complete gate from a fresh external clone.
+- Confirmed 15 focused hostile workflow, Gradle, lint, checker, documentation,
+  and plan-status mutations are rejected.
+- Passed `git diff --check`.
+- Exact-head hosted verification pending after the implementation push.
 
 ## Boundaries
 

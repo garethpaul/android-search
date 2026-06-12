@@ -4,26 +4,28 @@
 
 ## Context
 
-`android-search` has an SDK-free source baseline and guarded Gradle gates behind
-`make check`. The repository needs the same wrapper to run in GitHub Actions so
-query/privacy, UI guard, and Android backup contracts are checked before review.
+`android-search` has source contracts and guarded Gradle gates behind
+`make check`. The canonical workflow now installs the compatible legacy Android
+toolchain so query/privacy, UI guard, Android backup, lint, tests, and assembly
+are checked before review.
 
 ## Objectives
 
-- Run the existing `make check` wrapper in GitHub Actions.
-- Keep the CI job useful even when a legacy Android SDK is unavailable.
-- Make the workflow presence part of the SDK-free baseline contract.
+- Run the complete `make check` wrapper in GitHub Actions.
+- Install Android API 22 and build-tools 24.0.3 under Java 8.
+- Make the workflow and complete hosted gate part of the source baseline.
 
 ## Work Completed
 
 - Added `.github/workflows/check.yml` to run `make check` on pushes, pull
   requests, and manual dispatches.
-- Pinned checkout to an immutable revision, limited permissions to repository
-  reads, and bounded the job to five minutes.
-- Reused the existing guarded Makefile targets, which run SDK-free checks and
-  skip Gradle work when the Android SDK is absent.
-- Removed the maintainer-specific default SDK path and cleared ambient hosted
-  SDK variables so CI cannot accidentally invoke the unsupported Gradle path.
+- Pinned checkout and Java setup to immutable revisions, limited permissions to
+  repository reads, and bounded the job to 15 minutes.
+- Installed the exact API 22 and build-tools 24.0.3 packages before running the
+  existing guarded Makefile targets.
+- Made lint warnings fatal while retaining only documented legacy suppressions.
+- Selected deterministic non-queued PNG crunching without skipping aapt
+  validation.
 - Extended `scripts/check-baseline.sh` to require the CI workflow and this
   completed plan.
 - Updated README, VISION, SECURITY, and CHANGES with the CI baseline.
@@ -40,5 +42,6 @@ query/privacy, UI guard, and Android backup contracts are checked before review.
 
 ## Follow-Up Candidates
 
-- Add Android SDK-backed CI after migrating the legacy Gradle, Android plugin,
-  Fabric/Twitter, repository, and API-level baseline.
+- Exercise the search flow on an emulator and live backend separately.
+- Modernize the legacy Gradle, Android plugin, HTTP API, and target SDK in a
+  behavior-aware follow-up.

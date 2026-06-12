@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Promoted CI from source-only contracts to the complete API 22 lint, unit-test,
+  and debug-assembly gate with deterministic legacy resource processing.
 - Shut down each legacy search HTTP client's connection manager after request
   completion or failure to avoid retaining sockets across repeated queries.
 

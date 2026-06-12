@@ -17,9 +17,12 @@ SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
+HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CODEOWNERS="$ROOT_DIR/.github/CODEOWNERS"
+LINT_CONFIG="$ROOT_DIR/app/lint.xml"
 
 expected_ci_workflow() {
   cat <<'EOF'
@@ -35,6 +38,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 concurrency:
   group: check-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -42,18 +48,24 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
-      - name: Run baseline
+      - name: Install Android SDK packages
+        run: '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-22" "build-tools;24.0.3"'
+
+      - name: Set up Java 8
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: corretto
+          java-version: "8"
+
+      - name: Run full verification
         run: make check
-        env:
-          ANDROID_HOME: ""
-          ANDROID_SDK_ROOT: ""
 EOF
 }
 
@@ -71,6 +83,15 @@ if ! grep -Fq 'buildToolsVersion "24.0.3"' "$APP_BUILD"; then
   printf '%s\n' "Android build-tools must stay pinned to 24.0.3 for 64-bit aapt." >&2
   exit 1
 fi
+
+for build_contract in \
+  "useNewCruncher false" \
+  "warningsAsErrors true"; do
+  if ! grep -Fq "$build_contract" "$APP_BUILD"; then
+    printf '%s\n' "Android build must keep hosted verification contract: $build_contract" >&2
+    exit 1
+  fi
+done
 
 if grep -Fq 'android:allowBackup="true"' "$MANIFEST" ||
   ! grep -Fq 'android:allowBackup="false"' "$MANIFEST"; then
@@ -351,7 +372,32 @@ if [ "$workflow_paths" != "$CI_WORKFLOW" ]; then
 fi
 
 if [ "$(cat "$CI_WORKFLOW")" != "$(expected_ci_workflow)" ]; then
-  printf '%s\n' "GitHub Actions check workflow must match the approved SDK-free security baseline." >&2
+  printf '%s\n' "GitHub Actions check workflow must match the approved complete Android security baseline." >&2
+  exit 1
+fi
+
+if [ ! -f "$HOSTED_ANDROID_PLAN" ] || \
+   ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "make check" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "with zero lint issues, both Gradle" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "15 focused hostile" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "Exact-head hosted verification pending" "$HOSTED_ANDROID_PLAN"; then
+  printf '%s\n' "Hosted Android verification plan must record implementation status and verification boundary." >&2
+  exit 1
+fi
+
+if [ ! -f "$CI_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$CI_PLAN" || \
+   ! grep -Fq 'complete `make check` wrapper' "$CI_PLAN" || \
+   ! grep -Fq "Android API 22 and build-tools 24.0.3" "$CI_PLAN"; then
+  printf '%s\n' "CI plan must document the complete hosted Android gate." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GitHub Actions installs Android API 22 and build-tools 24.0.3" "$README" || \
+   ! grep -Fq 'complete `make check` gate' "$README" || \
+   ! grep -Fq "All other lint warnings fail the build." "$README"; then
+  printf '%s\n' "README must document the complete hosted Android and strict lint gates." >&2
   exit 1
 fi
 
@@ -491,13 +537,23 @@ if ! grep -Fq 'android:title="@string/search_hint"' "$RES_DIR/menu/menu_main.xml
   exit 1
 fi
 
-if ! grep -Fq "LintError" "$ROOT_DIR/app/lint.xml"; then
+if ! grep -Fq "LintError" "$LINT_CONFIG"; then
   printf '%s\n' "lint.xml must document the obsolete lint API database limitation." >&2
   exit 1
 fi
 
-if ! grep -Fq "IconMissingDensityFolder" "$ROOT_DIR/app/lint.xml"; then
+if ! grep -Fq "IconMissingDensityFolder" "$LINT_CONFIG"; then
   printf '%s\n' "lint.xml must document the nodpi bitmap asset baseline." >&2
+  exit 1
+fi
+
+if ! grep -Fq "OldTargetApi" "$LINT_CONFIG"; then
+  printf '%s\n' "lint.xml must document the deferred target-SDK modernization boundary." >&2
+  exit 1
+fi
+
+if [ "$(grep -c '<issue id=' "$LINT_CONFIG")" -ne 3 ]; then
+  printf '%s\n' "lint.xml must keep exactly the three documented legacy suppressions." >&2
   exit 1
 fi
 
