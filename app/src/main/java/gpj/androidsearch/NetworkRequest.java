@@ -58,33 +58,36 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
 
             // Instantiate an HttpClient
             HttpClient httpclient = new DefaultHttpClient(httpParams);
-            String url = buildSearchUrl(query);
-            HttpGet httpget = new HttpGet(url);
-
             try {
-                Log.v("network_request", "ok");
-                //Log.i(getClass().getSimpleName(), "send  task - start");
-                ResponseHandler<String> responseHandler = new BasicResponseHandler();
+                String url = buildSearchUrl(query);
+                HttpGet httpget = new HttpGet(url);
 
-                String responseBody = httpclient.execute(httpget,
-                        responseHandler);
-                JSONObject json = new JSONObject(responseBody);
-                Log.v("network_request", "got json");
+                try {
+                    Log.v("network_request", "ok");
+                    //Log.i(getClass().getSimpleName(), "send  task - start");
+                    ResponseHandler<String> responseHandler = new BasicResponseHandler();
 
-                return json;
+                    String responseBody = httpclient.execute(httpget,
+                            responseHandler);
+                    JSONObject json = new JSONObject(responseBody);
+                    Log.v("network_request", "got json");
+
+                    return json;
 
 
-            } catch (ClientProtocolException e) {
-                Log.e("network_request", "Search protocol error", e);
-                return errorResult("Search request failed");
-            } catch (IOException e) {
-                Log.e("network_request", "Search IO error", e);
-                return errorResult("Search request failed");
-            } catch (JSONException e) {
-                Log.e("network_request", "Search response parse error", e);
-                return errorResult("Search request failed");
+                } catch (ClientProtocolException e) {
+                    Log.e("network_request", "Search protocol error", e);
+                    return errorResult("Search request failed");
+                } catch (IOException e) {
+                    Log.e("network_request", "Search IO error", e);
+                    return errorResult("Search request failed");
+                } catch (JSONException e) {
+                    Log.e("network_request", "Search response parse error", e);
+                    return errorResult("Search request failed");
+                }
+            } finally {
+                httpclient.getConnectionManager().shutdown();
             }
-
 
         } catch (Throwable t) {
             Log.e("network_request", "Unexpected search request error", t);

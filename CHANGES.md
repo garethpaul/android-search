@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-12
+
+- Shut down each legacy search HTTP client's connection manager after request
+  completion or failure to avoid retaining sockets across repeated queries.
+
 ## 2026-06-10
 
 - Removed activity-thread blocking on `AsyncTask.get()`, rejected blank search

@@ -17,6 +17,7 @@ SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
 
 if ! grep -Fq "url 'https://repo1.maven.org/maven2'" "$ROOT_BUILD"; then
@@ -67,6 +68,25 @@ fi
 
 if ! grep -Fq "private static JSONObject errorResult(String message)" "$NETWORK_REQUEST"; then
   printf '%s\n' "Search request must return explicit JSON errors." >&2
+  exit 1
+fi
+
+HTTP_CLIENT_SCOPE=$(sed -n \
+  '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (Throwable t)/p' \
+  "$NETWORK_REQUEST")
+for cleanup_contract in \
+  "finally" \
+  "httpclient.getConnectionManager().shutdown();"; do
+  if ! printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fq "$cleanup_contract"; then
+    printf '%s\n' "Search HTTP client cleanup is missing: $cleanup_contract" >&2
+    exit 1
+  fi
+done
+
+if [ ! -f "$HTTP_CLIENT_CLEANUP_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$HTTP_CLIENT_CLEANUP_PLAN" || \
+   ! grep -Fq "make check" "$HTTP_CLIENT_CLEANUP_PLAN"; then
+  printf '%s\n' "Search HTTP client cleanup plan must record completed make check verification." >&2
   exit 1
 fi
 
@@ -312,6 +332,11 @@ fi
 
 if ! grep -Fq "GitHub Actions" "$ROOT_DIR/README.md"; then
   printf '%s\n' "README must document the GitHub Actions check." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Search HTTP clients shut down their connection managers" "$ROOT_DIR/README.md"; then
+  printf '%s\n' "README must document search HTTP client cleanup." >&2
   exit 1
 fi
 
