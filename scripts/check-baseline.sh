@@ -377,12 +377,13 @@ if [ "$(cat "$CI_WORKFLOW")" != "$(expected_ci_workflow)" ]; then
 fi
 
 if [ ! -f "$HOSTED_ANDROID_PLAN" ] || \
-   ! grep -Fq "Status: Implementation Complete; Hosted Verification Pending" "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq "Status: Completed" "$HOSTED_ANDROID_PLAN" || \
    ! grep -Fq "make check" "$HOSTED_ANDROID_PLAN" || \
    ! grep -Fq "with zero lint issues, both Gradle" "$HOSTED_ANDROID_PLAN" || \
    ! grep -Fq "15 focused hostile" "$HOSTED_ANDROID_PLAN" || \
-   ! grep -Fq "Exact-head hosted verification pending" "$HOSTED_ANDROID_PLAN"; then
-  printf '%s\n' "Hosted Android verification plan must record implementation status and verification boundary." >&2
+   ! grep -Fq 'pull-request run `27402189913`' "$HOSTED_ANDROID_PLAN" || \
+   ! grep -Fq '`0a7cec5db4958f134bdd4dda4f256fe381e2e1df`' "$HOSTED_ANDROID_PLAN"; then
+  printf '%s\n' "Hosted Android verification plan must record completed local and exact-head hosted evidence." >&2
   exit 1
 fi
 
