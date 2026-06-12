@@ -37,13 +37,15 @@ Priority:
   teardown
 - Keep search and image results owned by the latest active request
 - Keep the SDK-free `make check` baseline running in GitHub Actions
+- Keep the legacy Gradle runtime behind a checksum-verified generated wrapper
 
 Next priorities:
 
 - Replace deprecated Apache HTTP usage with maintained networking APIs
 - Add input encoding, null handling, and error-state coverage around search
 - Document the expected API response shape
-- Modernize Gradle, SDK levels, and tests in a dedicated pass
+- Evaluate Gradle runtime, SDK, and test modernization together in a dedicated
+  compatibility pass; wrapper hardening is separate
 
 Contribution rules:
 

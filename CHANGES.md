@@ -2,6 +2,9 @@
 
 ## 2026-06-12
 
+- Regenerated the Gradle wrapper bootstrap with official Gradle 8.14.5 tooling
+  while retaining the Gradle 2.2.1 Android runtime.
+- Pinned the official distribution checksum and exact wrapper artifact contracts.
 - Promoted CI from source-only contracts to the complete API 22 lint, unit-test,
   and debug-assembly gate with deterministic legacy resource processing.
 - Shut down each legacy search HTTP client's connection manager after request

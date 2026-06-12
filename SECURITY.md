@@ -34,6 +34,8 @@ Helpful reports include:
 - Pinned, read-only GitHub Actions runs the guarded `make check` baseline;
   review workflow, Gradle, and checker changes as part of the supply-chain
   surface.
+- The baseline pins and verifies the wrapper JAR and Gradle distribution checksums.
+  An uncached bootstrap still depends on Gradle's HTTPS service.
 - Hosted checkout credentials are not persisted. Self-protecting CODEOWNERS
   assigns CI controls and privacy-sensitive application source to the repository
   owner; repository rules should require that approval.
@@ -45,6 +47,10 @@ Helpful reports include:
 If this project requests device permissions such as location, camera, microphone, contacts, Bluetooth, health data, or local storage access, reports should describe the permission involved and whether sensitive data can be accessed, persisted, or transmitted unexpectedly. Please avoid testing against real third-party user data or accounts you do not control.
 
 ## Dependency and Supply Chain Security
+
+The generated Gradle 8.14.5 bootstrap retains the legacy Gradle 2.2.1 runtime
+required by Android Gradle Plugin 1.2.3. Review all four wrapper files together;
+the SDK-free baseline rejects drift from published wrapper and distribution hashes.
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
