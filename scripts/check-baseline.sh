@@ -708,7 +708,10 @@ fi
 if [ ! -f "$WRAPPER_PLAN" ] || ! grep -Fq "status: completed" "$WRAPPER_PLAN" || \
    ! grep -Fq "fresh temporary Gradle user home" "$WRAPPER_PLAN" || ! grep -Fq "incorrect checksum was rejected" "$WRAPPER_PLAN" || \
    ! grep -Fq 'SDK-backed `make check` passed' "$WRAPPER_PLAN" || ! grep -Fq "external working directory" "$WRAPPER_PLAN" || \
-   ! grep -Fq "hostile mutations rejected" "$WRAPPER_PLAN"; then
+   ! grep -Fq "hostile mutations rejected" "$WRAPPER_PLAN" || \
+   ! grep -Fq 'pull-request `Check` run `27440820729` passed' "$WRAPPER_PLAN" || \
+   ! grep -Fq 'CodeQL run `27440818612` passed' "$WRAPPER_PLAN" || \
+   ! grep -Fq "a12f99f40ac2361a63dc6090875939fb3450a602" "$WRAPPER_PLAN"; then
   printf '%s\n' "Gradle wrapper plan must record completed local verification evidence." >&2
   exit 1
 fi

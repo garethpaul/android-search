@@ -102,5 +102,9 @@ CodeQL success.
 
 ## Hosted Verification
 
-Hosted pull-request and CodeQL evidence will be recorded after the exact
-implementation head completes both canonical checks.
+- On implementation head `a12f99f40ac2361a63dc6090875939fb3450a602`,
+  pull-request `Check` run `27440820729` passed the full Java 8/API 22 gate.
+- CodeQL run `27440818612` passed both the actions and java-kotlin analyzers on
+  the same implementation head.
+- PR #4 was open and mergeable at that head. The final evidence-only commit
+  must rerun both canonical gates before tracker reconciliation.
