@@ -32,6 +32,8 @@ public class MainActivity extends Activity {
 
     private static final String LOG_TAG = "android_search";
     private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000;
+    private static final int MAX_IMAGE_BODY_BYTES = 1024 * 1024;
+    private static final long MAX_IMAGE_PIXELS = 4_000_000L;
 
     private TextView textView;
     private NetworkRequest activeSearchRequest;
@@ -221,7 +223,11 @@ public class MainActivity extends Activity {
                     throw new IOException("Search image request failed");
                 }
                 in = connection.getInputStream();
-                mIcon11 = BitmapFactory.decodeStream(in);
+                byte[] imageBody = BoundedResponseBody.readBytes(
+                        in,
+                        connection.getContentLength(),
+                        MAX_IMAGE_BODY_BYTES);
+                mIcon11 = decodeBoundedImage(imageBody);
             } catch (Exception e) {
                 Log.e(LOG_TAG, "Unable to download search image");
             } finally {
@@ -249,6 +255,18 @@ public class MainActivity extends Activity {
                 bmImage.setImageBitmap(result);
             }
         }
+    }
+
+    private static Bitmap decodeBoundedImage(byte[] imageBody) throws IOException {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(imageBody, 0, imageBody.length, bounds);
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0
+                || (long) bounds.outWidth * bounds.outHeight > MAX_IMAGE_PIXELS) {
+            throw new IOException("Search image dimensions exceed limit");
+        }
+
+        return BitmapFactory.decodeByteArray(imageBody, 0, imageBody.length);
     }
 
     private static URL httpsImageUrl(String value) throws MalformedURLException {

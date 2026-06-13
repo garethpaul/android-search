@@ -48,6 +48,8 @@
 
 ## Safety and gotchas
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
 - This legacy Android baseline pins Android build-tools 24.0.3 and Android Gradle Plugin 1.2.3.
 - Search result image downloads require HTTPS and bounded connection/read timeouts before decoding the bitmap.

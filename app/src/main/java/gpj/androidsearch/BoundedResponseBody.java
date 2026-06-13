@@ -13,6 +13,16 @@ final class BoundedResponseBody {
 
     static String read(InputStream input, long contentLength, int maxBytes)
             throws IOException {
+        byte[] body = readBytes(input, contentLength, maxBytes);
+        try {
+            return new String(body, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    static byte[] readBytes(InputStream input, long contentLength, int maxBytes)
+            throws IOException {
         if (input == null) {
             throw new NullPointerException("input");
         }
@@ -55,10 +65,6 @@ final class BoundedResponseBody {
             total += count;
         }
 
-        try {
-            return output.toString("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e);
-        }
+        return output.toByteArray();
     }
 }

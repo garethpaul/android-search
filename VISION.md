@@ -17,6 +17,8 @@ The current focus is:
 
 Priority:
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+
 - Preserve the search intent and `SearchView` flow
 - Keep the remote API behavior visible in source
 - Avoid broad changes to networking without documenting response expectations

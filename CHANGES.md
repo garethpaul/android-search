@@ -2,6 +2,7 @@
 
 ## 2026-06-13
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
 - Image downloads reject redirects and non-success responses before decoding.
 - Added a 64 KiB response-body limit for declared and streaming search JSON,
   with an executable Java boundary harness and guaranteed stream cleanup.

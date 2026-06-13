@@ -22,6 +22,11 @@ public final class BoundedResponseBodyTest {
     public static void main(String[] args) throws Exception {
         assertEquals("", read(new byte[0], 0, LIMIT));
         assertEquals(LIMIT, read(new byte[LIMIT], LIMIT, LIMIT).length());
+        assertEquals(LIMIT,
+                BoundedResponseBody.readBytes(
+                        new ByteArrayInputStream(new byte[LIMIT]),
+                        LIMIT,
+                        LIMIT).length);
         assertEquals("\u20ac", read(new byte[] {
                 (byte) 0xe2, (byte) 0x82, (byte) 0xac
         }, -1, LIMIT));
@@ -29,6 +34,7 @@ public final class BoundedResponseBodyTest {
         expectIOException(new byte[LIMIT + 1], LIMIT + 1, LIMIT);
         expectIOException(new byte[LIMIT + 1], -1, LIMIT);
         expectIOException(new byte[LIMIT + 1], 1, LIMIT);
+        expectByteIOException(new byte[LIMIT + 1], -1, LIMIT);
         expectIllegalLimit(0);
         expectIllegalLimit(-1);
 
@@ -72,6 +78,17 @@ public final class BoundedResponseBodyTest {
             read(new byte[0], 0, maxBytes);
             throw new AssertionError("invalid limit was accepted");
         } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
+    }
+
+    private static void expectByteIOException(byte[] value, long declaredLength,
+            int maxBytes) throws Exception {
+        try {
+            BoundedResponseBody.readBytes(
+                    new ByteArrayInputStream(value), declaredLength, maxBytes);
+            throw new AssertionError("oversized byte response was accepted");
+        } catch (IOException expected) {
             // Expected.
         }
     }

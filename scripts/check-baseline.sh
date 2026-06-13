@@ -22,6 +22,7 @@ EXCEPTION_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-exception-log-redacti
 RUNTIME_EXCEPTION_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-runtime-exception-boundary.md"
 RESPONSE_BODY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-response-body-limit.md"
 IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejection.md"
+IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
@@ -301,7 +302,8 @@ for response_reader_contract in \
   'int remaining = maxBytes - total;' \
   'int requested = (int) Math.min(buffer.length, (long) remaining + 1L);' \
   'if (count > remaining)' \
-  'return output.toString("UTF-8");'; do
+  'return new String(body, "UTF-8");' \
+  'return output.toByteArray();'; do
   if ! grep -Fq "$response_reader_contract" "$RESPONSE_BODY_READER"; then
     printf '%s\n' "Bounded response reader contract changed: $response_reader_contract" >&2
     exit 1
@@ -546,6 +548,53 @@ if grep -Fq "URLConnection connection = imageUrl.openConnection();" "$MAIN_ACTIV
   printf '%s\n' "Search image downloads must not use an implicitly redirecting generic connection." >&2
   exit 1
 fi
+
+for image_body_contract in \
+  "private static final int MAX_IMAGE_BODY_BYTES = 1024 * 1024;" \
+  "private static final long MAX_IMAGE_PIXELS = 4_000_000L;" \
+  "BoundedResponseBody.readBytes(" \
+  "connection.getContentLength()," \
+  "private static Bitmap decodeBoundedImage(byte[] imageBody) throws IOException" \
+  "bounds.inJustDecodeBounds = true;" \
+  "(long) bounds.outWidth * bounds.outHeight > MAX_IMAGE_PIXELS"; do
+  if ! grep -Fq "$image_body_contract" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing bounded image contract: $image_body_contract" >&2
+    exit 1
+  fi
+done
+if grep -Fq "BitmapFactory.decodeStream(in)" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search images must not be decoded from an unbounded response stream." >&2
+  exit 1
+fi
+for byte_reader_contract in \
+  "static byte[] readBytes(InputStream input, long contentLength, int maxBytes)" \
+  "return output.toByteArray();"; do
+  if ! grep -Fq "$byte_reader_contract" "$RESPONSE_BODY_READER"; then
+    printf '%s\n' "Bounded response byte reader contract changed: $byte_reader_contract" >&2
+    exit 1
+  fi
+done
+if ! grep -Fq "BoundedResponseBody.readBytes(" "$RESPONSE_BODY_TEST" || \
+   ! grep -Fq "expectByteIOException(new byte[LIMIT + 1], -1, LIMIT);" "$RESPONSE_BODY_TEST"; then
+  printf '%s\n' "Bounded image bytes must retain exact-limit and overflow tests." >&2
+  exit 1
+fi
+
+if [ ! -f "$IMAGE_BODY_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$IMAGE_BODY_PLAN" || \
+   ! grep -Fq "## Verification Completed" "$IMAGE_BODY_PLAN" || \
+   ! grep -Fq "make check" "$IMAGE_BODY_PLAN" || \
+   ! grep -Fq "hostile mutations" "$IMAGE_BODY_PLAN"; then
+  printf '%s\n' "Search image body-limit plan must record completed verification." >&2
+  exit 1
+fi
+
+for image_body_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! grep -Fq "Image downloads bound compressed bodies and decoded pixel dimensions before allocation." "$image_body_doc"; then
+    printf '%s\n' "$image_body_doc must document bounded image allocation." >&2
+    exit 1
+  fi
+done
 
 if grep -Fq "new java.net.URL(urldisplay).openStream()" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search image downloads must not open unvalidated URLs directly." >&2

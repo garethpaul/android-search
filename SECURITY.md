@@ -16,6 +16,8 @@ Do not open a public issue that includes exploit code, secrets, personal data, o
 
 Helpful reports include:
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+
 - the affected file, endpoint, permission, dependency, or workflow
 - a concise impact statement explaining what an attacker could do
 - reproduction steps using test data and accounts you control

@@ -1,6 +1,6 @@
 # Bound Search Result Image Bodies
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -31,3 +31,18 @@ responses and extreme decoded dimensions can consume unbounded memory.
 - Hostile mutations for byte-limit expansion/bypass, direct stream decoding,
   dimension bypass, pixel overflow, gate removal, docs, and plan status.
 - Diff, artifact, conflict-marker, and credential-shaped addition audits.
+
+## Work Completed
+
+- Reused the bounded response reader for exact-limit compressed image bytes.
+- Rejected invalid and over-four-million-pixel dimensions before bitmap allocation.
+- Added pure-Java byte-boundary coverage and portable static contracts.
+
+## Verification Completed
+
+- Local and external-working-directory `make check` passed the SDK-free
+  baseline and pure-Java exact-limit and one-byte-overflow harness. Android
+  lint, Gradle tests, and build truthfully skipped without an Android SDK.
+- Eight focused hostile mutations were rejected: limit expansion, direct
+  stream decoding, bounded-reader bypass, bounds-probe removal, pixel-limit
+  removal, overflow-test removal, README guidance, and plan-status rollback.
