@@ -43,6 +43,7 @@ Helpful reports include:
   receives an explicit least-privilege security contract.
 - Generic search failure logs preserve network and image error categories
   without exception messages, stacks, query-bearing URLs, or response details.
+- Image downloads reject redirects and non-success responses before decoding.
 - Unexpected runtime exceptions become generic search failures while fatal JVM
   errors remain visible to the Android platform instead of being swallowed.
 - Search JSON uses a 64 KiB response-body limit for declared and streamed

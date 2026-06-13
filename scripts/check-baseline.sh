@@ -21,6 +21,7 @@ HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cle
 EXCEPTION_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-exception-log-redaction.md"
 RUNTIME_EXCEPTION_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-runtime-exception-boundary.md"
 RESPONSE_BODY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-response-body-limit.md"
+IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejection.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
@@ -512,16 +513,39 @@ for pattern in \
   "private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000" \
   "private static URL httpsImageUrl(String value) throws MalformedURLException" \
   "equalsIgnoreCase(imageUrl.getProtocol())" \
-  "URLConnection connection = imageUrl.openConnection();" \
+  "HttpsURLConnection connection = null;" \
+  "connection = (HttpsURLConnection) imageUrl.openConnection();" \
+  "connection.setInstanceFollowRedirects(false);" \
   "connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
+  "int responseCode = connection.getResponseCode();" \
+  "if (responseCode < 200 || responseCode >= 300)" \
   "in = connection.getInputStream();" \
+  "connection.disconnect();" \
   "Log.e(LOG_TAG, \"Unable to download search image\");"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing image download guard: $pattern" >&2
     exit 1
   fi
 done
+
+MAIN_ACTIVITY_COMPACT=$(tr -d '[:space:]' < "$MAIN_ACTIVITY")
+if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
+    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}in=connection.getInputStream();'; then
+  printf '%s\n' "Search image redirects and non-success responses must be rejected before reading bytes." >&2
+  exit 1
+fi
+
+if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
+    'if(in!=null){try{in.close();}catch(IOExceptione){Log.e(LOG_TAG,"Unabletoclosesearchimagestream");}}if(connection!=null){connection.disconnect();}'; then
+  printf '%s\n' "Search image connections must disconnect after stream cleanup." >&2
+  exit 1
+fi
+
+if grep -Fq "URLConnection connection = imageUrl.openConnection();" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search image downloads must not use an implicitly redirecting generic connection." >&2
+  exit 1
+fi
 
 if grep -Fq "new java.net.URL(urldisplay).openStream()" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search image downloads must not open unvalidated URLs directly." >&2
@@ -648,6 +672,22 @@ if ! grep -Fq "status: completed" "$IMAGE_DOWNLOAD_PLAN" || ! grep -Fq "make che
   printf '%s\n' "Search image download guard plan must record completed status and make check verification." >&2
   exit 1
 fi
+
+if [ ! -f "$IMAGE_REDIRECT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$IMAGE_REDIRECT_PLAN" || \
+   ! grep -Fq "make check" "$IMAGE_REDIRECT_PLAN" || \
+   ! grep -Fq "hostile mutations" "$IMAGE_REDIRECT_PLAN"; then
+  printf '%s\n' "Search image redirect plan must record completed verification." >&2
+  exit 1
+fi
+
+for image_redirect_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" \
+    "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! grep -Fq "Image downloads reject redirects and non-success responses before decoding." "$image_redirect_doc"; then
+    printf '%s\n' "$image_redirect_doc must document image redirect rejection." >&2
+    exit 1
+  fi
+done
 
 if [ ! -f "$INTENT_UI_PLAN" ]; then
   printf '%s\n' "Search intent/UI guard plan is missing." >&2

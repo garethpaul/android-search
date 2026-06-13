@@ -28,6 +28,7 @@ Priority:
   fatal JVM errors
 - Keep the 64 KiB response-body limit enforced before backend JSON parsing
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
+- Image downloads reject redirects and non-success responses before decoding.
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable

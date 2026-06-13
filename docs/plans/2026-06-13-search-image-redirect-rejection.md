@@ -1,6 +1,6 @@
 # Search Image Redirect Rejection
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -51,4 +51,14 @@ and exact diff/artifact/secret inspection before push and hosted validation.
 
 ## Verification
 
-- Pending implementation.
+- SDK-backed Gradle lint, both unit-test variants, Java compilation, and debug
+  assembly passed; lint reported zero findings.
+- Canonical and external-working-directory SDK-backed `make check` passed the
+  baseline, zero-finding debug/release lint, bounded-response harness, both
+  unit-test variants, and debug assembly.
+- Nine focused hostile mutations were rejected across redirect enablement or
+  removal, missing/inverted/reordered status checks, missing disconnect,
+  generic connection restoration, guidance removal, and stale plan status.
+- Shell syntax and `git diff --check` passed. Final exact diff, generated
+  artifact, conflict-marker, and credential-pattern inspection is performed
+  before commit; no emulator, device, backend, or redirect server was used.

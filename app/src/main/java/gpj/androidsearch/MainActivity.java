@@ -25,7 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends Activity {
 
@@ -208,11 +209,17 @@ public class MainActivity extends Activity {
 
             Bitmap mIcon11 = null;
             InputStream in = null;
+            HttpsURLConnection connection = null;
             try {
                 URL imageUrl = httpsImageUrl(urls[0].trim());
-                URLConnection connection = imageUrl.openConnection();
+                connection = (HttpsURLConnection) imageUrl.openConnection();
+                connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
                 connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
+                int responseCode = connection.getResponseCode();
+                if (responseCode < 200 || responseCode >= 300) {
+                    throw new IOException("Search image request failed");
+                }
                 in = connection.getInputStream();
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
@@ -224,6 +231,9 @@ public class MainActivity extends Activity {
                     } catch (IOException e) {
                         Log.e(LOG_TAG, "Unable to close search image stream");
                     }
+                }
+                if (connection != null) {
+                    connection.disconnect();
                 }
             }
             return mIcon11;
