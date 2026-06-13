@@ -18,6 +18,7 @@ SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
+EXCEPTION_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-exception-log-redaction.md"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
@@ -158,6 +159,53 @@ if ! grep -Fq "private static JSONObject errorResult(String message)" "$NETWORK_
   printf '%s\n' "Search request must return explicit JSON errors." >&2
   exit 1
 fi
+
+for network_failure_log in \
+  'Log.e("network_request", "Unable to build error result");' \
+  'Log.e("network_request", "Search protocol error");' \
+  'Log.e("network_request", "Search IO error");' \
+  'Log.e("network_request", "Search response parse error");' \
+  'Log.e("network_request", "Unexpected search request error");'; do
+  if [ "$(grep -Fc "$network_failure_log" "$NETWORK_REQUEST" || true)" -ne 1 ]; then
+    printf '%s\n' "Search network failure log contract changed: $network_failure_log" >&2
+    exit 1
+  fi
+done
+for image_failure_log in \
+  'Log.e(LOG_TAG, "Unable to download search image");' \
+  'Log.e(LOG_TAG, "Unable to close search image stream");'; do
+  if [ "$(grep -Fc "$image_failure_log" "$MAIN_ACTIVITY" || true)" -ne 1 ]; then
+    printf '%s\n' "Search image failure log contract changed: $image_failure_log" >&2
+    exit 1
+  fi
+done
+if [ "$(grep -Fc 'Log.e(' "$NETWORK_REQUEST" || true)" -ne 5 ] || \
+   [ "$(grep -Fc 'Log.e(' "$MAIN_ACTIVITY" || true)" -ne 2 ]; then
+  printf '%s\n' "Search failure logging must keep exactly seven reviewed error categories." >&2
+  exit 1
+fi
+for sensitive_log_pattern in ", e);" ", t);" "getMessage()" "printStackTrace()" \
+  "Log.getStackTraceString" "+ query" "+ url" "+ imageUrl" "+ responseBody" \
+  ", query);" ", url);" ", imageUrl);" ", responseBody);"; do
+  if grep -Fq "$sensitive_log_pattern" "$NETWORK_REQUEST" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Search logs must not include exception or request-derived details: $sensitive_log_pattern" >&2
+    exit 1
+  fi
+done
+if [ ! -f "$EXCEPTION_LOG_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$EXCEPTION_LOG_PLAN" || \
+   ! grep -Fq "make check" "$EXCEPTION_LOG_PLAN" || \
+   ! grep -Fq "hostile mutations" "$EXCEPTION_LOG_PLAN"; then
+  printf '%s\n' "Search exception-log plan must record completed verification." >&2
+  exit 1
+fi
+for exception_log_doc in "$README" "$SECURITY" "$ROOT_DIR/CHANGES.md"; do
+  if ! tr '\n' ' ' < "$exception_log_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fiq "generic search failure logs"; then
+    printf '%s\n' "$exception_log_doc must document generic search failure logs." >&2
+    exit 1
+  fi
+done
 
 HTTP_CLIENT_SCOPE=$(sed -n \
   '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (Throwable t)/p' \
@@ -368,7 +416,7 @@ for pattern in \
   "connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "in = connection.getInputStream();" \
-  "Log.e(LOG_TAG, \"Unable to download search image\", e);"; do
+  "Log.e(LOG_TAG, \"Unable to download search image\");"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing image download guard: $pattern" >&2
     exit 1

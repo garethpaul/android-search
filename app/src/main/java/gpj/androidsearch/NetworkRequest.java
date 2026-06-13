@@ -39,7 +39,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
             json.put("text", message);
             json.put("image", "");
         } catch (JSONException e) {
-            Log.e("network_request", "Unable to build error result", e);
+            Log.e("network_request", "Unable to build error result");
         }
 
         return json;
@@ -76,13 +76,13 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
 
 
                 } catch (ClientProtocolException e) {
-                    Log.e("network_request", "Search protocol error", e);
+                    Log.e("network_request", "Search protocol error");
                     return errorResult("Search request failed");
                 } catch (IOException e) {
-                    Log.e("network_request", "Search IO error", e);
+                    Log.e("network_request", "Search IO error");
                     return errorResult("Search request failed");
                 } catch (JSONException e) {
-                    Log.e("network_request", "Search response parse error", e);
+                    Log.e("network_request", "Search response parse error");
                     return errorResult("Search request failed");
                 }
             } finally {
@@ -90,7 +90,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
             }
 
         } catch (Throwable t) {
-            Log.e("network_request", "Unexpected search request error", t);
+            Log.e("network_request", "Unexpected search request error");
             return errorResult("Search request failed");
         }
     }

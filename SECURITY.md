@@ -41,6 +41,8 @@ Helpful reports include:
   owner; repository rules should require that approval.
 - `check.yml` remains the only approved workflow until another workflow
   receives an explicit least-privilege security contract.
+- Generic search failure logs preserve network and image error categories
+  without exception messages, stacks, query-bearing URLs, or response details.
 
 ## Mobile Privacy Notes
 

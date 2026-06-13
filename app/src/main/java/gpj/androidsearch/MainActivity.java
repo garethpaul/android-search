@@ -216,13 +216,13 @@ public class MainActivity extends Activity {
                 in = connection.getInputStream();
                 mIcon11 = BitmapFactory.decodeStream(in);
             } catch (Exception e) {
-                Log.e(LOG_TAG, "Unable to download search image", e);
+                Log.e(LOG_TAG, "Unable to download search image");
             } finally {
                 if (in != null) {
                     try {
                         in.close();
                     } catch (IOException e) {
-                        Log.e(LOG_TAG, "Unable to close search image stream", e);
+                        Log.e(LOG_TAG, "Unable to close search image stream");
                     }
                 }
             }

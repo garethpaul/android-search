@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Replaced throwable-bearing network and image errors with generic search
+  failure logs and added contracts against exception- or request-derived data.
+
 ## 2026-06-12
 
 - Regenerated the Gradle wrapper bootstrap with official Gradle 8.14.5 tooling
