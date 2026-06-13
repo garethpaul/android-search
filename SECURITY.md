@@ -45,6 +45,8 @@ Helpful reports include:
   without exception messages, stacks, query-bearing URLs, or response details.
 - Unexpected runtime exceptions become generic search failures while fatal JVM
   errors remain visible to the Android platform instead of being swallowed.
+- Search JSON uses a 64 KiB response-body limit for declared and streamed
+  content before parsing, while retaining privacy-safe failure handling.
 
 ## Mobile Privacy Notes
 

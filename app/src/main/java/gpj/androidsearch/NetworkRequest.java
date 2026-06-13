@@ -3,11 +3,14 @@ package gpj.androidsearch;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
@@ -15,11 +18,13 @@ import org.apache.http.params.HttpParams;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
 public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
     static final String SEARCH_ENDPOINT = "https://garethpaul-app.appspot.com/api/search?q=";
+    private static final int MAX_RESPONSE_BODY_BYTES = 64 * 1024;
 
     static String buildSearchUrl(String query) throws UnsupportedEncodingException {
         return SEARCH_ENDPOINT + URLEncoder.encode(String.valueOf(query), "UTF-8");
@@ -45,6 +50,33 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
         return json;
     }
 
+    private static ResponseHandler<String> boundedResponseHandler() {
+        return new ResponseHandler<String>() {
+            @Override
+            public String handleResponse(HttpResponse response)
+                    throws ClientProtocolException, IOException {
+                StatusLine statusLine = response.getStatusLine();
+                if (statusLine.getStatusCode() >= 300) {
+                    throw new HttpResponseException(statusLine.getStatusCode(),
+                            statusLine.getReasonPhrase());
+                }
+
+                HttpEntity entity = response.getEntity();
+                if (entity == null) {
+                    return null;
+                }
+
+                InputStream content = entity.getContent();
+                try {
+                    return BoundedResponseBody.read(content,
+                            entity.getContentLength(), MAX_RESPONSE_BODY_BYTES);
+                } finally {
+                    content.close();
+                }
+            }
+        };
+    }
+
     @Override
     protected JSONObject doInBackground(String... params) {
         try {
@@ -64,7 +96,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
                     HttpGet httpget = new HttpGet(url);
                     Log.v("network_request", "ok");
                     //Log.i(getClass().getSimpleName(), "send  task - start");
-                    ResponseHandler<String> responseHandler = new BasicResponseHandler();
+                    ResponseHandler<String> responseHandler = boundedResponseHandler();
 
                     String responseBody = httpclient.execute(httpget,
                             responseHandler);

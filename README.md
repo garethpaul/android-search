@@ -90,6 +90,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   timeouts before decoding the bitmap.
 - Search HTTP clients shut down their connection managers after every request
   outcome so repeated queries do not retain socket pools.
+- Search JSON downloads enforce a 64 KiB response-body limit for declared and
+  streaming lengths before parsing, preventing unbounded response allocation.
 - The search activity guards nullable ActionBar setup before applying icon and
   home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the

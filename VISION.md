@@ -26,6 +26,7 @@ Priority:
 - Keep search queries and raw responses out of success-path device logs
 - Convert recoverable runtime failures into generic results without catching
   fatal JVM errors
+- Keep the 64 KiB response-body limit enforced before backend JSON parsing
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is

@@ -1,6 +1,6 @@
 # Bound Search Response Bodies
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -60,14 +60,30 @@ cleanup-order, documentation, and completed-plan contracts that reject drift.
 
 ## Verification
 
-- Focused host boundary harness under Java 8.
-- Canonical and external-working-directory SDK-backed `make check`.
-- Mutation checks for cap removal/increase, declared-length bypass,
-  streaming-limit bypass, exact-boundary rejection, stream-close removal,
-  `BasicResponseHandler` restoration, test removal, and stale plan evidence.
+Verification: Completed
+
+- `scripts/test-bounded-response-body.sh` passes under Java 8 with Java 7
+  source compatibility and warnings treated as errors.
+- Canonical and external-working-directory SDK-backed `make check` pass API 22
+  lint, unit-test variants, debug assembly, and the host boundary harness.
+- Ten focused hostile mutations cover cap increase, declared-length bypass,
+  streaming lookahead removal, exact-boundary rejection, stream-close removal,
+  `BasicResponseHandler` restoration, test-gate removal, exact-boundary test
+  removal, stale plan status, and missing mutation evidence. Every mutation is
+  rejected.
 - `sh -n`, `git diff --check`, generated-artifact inspection, and
-  credential-shaped added-line scanning.
-- Exact-head hosted checks and code-scanning snapshot after push.
+  credential-shaped added-line scanning are part of the pre-push audit.
+- Exact-head hosted checks and code-scanning state are recorded after push.
+
+## Work Completed
+
+- Added a pure-Java reader that rejects oversized declared lengths without
+  reading and detects streaming overflow after at most one byte beyond the cap.
+- Replaced the unbounded basic response handler while preserving HTTP status
+  rejection, generic failure handling, JSON parsing, and client shutdown.
+- Closed entity streams from `finally` on successful reads and read failures.
+- Wired executable exact-boundary and overflow tests into the canonical test
+  gate and documented the operational limit.
 
 ## Scope Boundaries
 

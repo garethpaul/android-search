@@ -20,6 +20,9 @@ OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-g
 HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
 EXCEPTION_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-exception-log-redaction.md"
 RUNTIME_EXCEPTION_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-runtime-exception-boundary.md"
+RESPONSE_BODY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-response-body-limit.md"
+RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
+RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
@@ -261,6 +264,72 @@ for runtime_exception_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" \
   if ! tr '\n' ' ' < "$runtime_exception_doc" | tr -s '[:space:]' ' ' | \
       grep -Fiq "fatal JVM errors"; then
     printf '%s\n' "$runtime_exception_doc must document propagation of fatal JVM errors." >&2
+    exit 1
+  fi
+done
+
+for response_body_contract in \
+  'private static final int MAX_RESPONSE_BODY_BYTES = 64 * 1024;' \
+  'private static ResponseHandler<String> boundedResponseHandler()' \
+  'if (statusLine.getStatusCode() >= 300)' \
+  'BoundedResponseBody.read(content,' \
+  'entity.getContentLength(), MAX_RESPONSE_BODY_BYTES);' \
+  'ResponseHandler<String> responseHandler = boundedResponseHandler();'; do
+  if ! grep -Fq "$response_body_contract" "$NETWORK_REQUEST"; then
+    printf '%s\n' "Search response-body limit integration changed: $response_body_contract" >&2
+    exit 1
+  fi
+done
+if grep -Fq "BasicResponseHandler" "$NETWORK_REQUEST"; then
+  printf '%s\n' "Search responses must not use the unbounded BasicResponseHandler." >&2
+  exit 1
+fi
+
+RESPONSE_HANDLER_SCOPE=$(sed -n \
+  '/private static ResponseHandler<String> boundedResponseHandler()/,/^    }/p' \
+  "$NETWORK_REQUEST")
+RESPONSE_HANDLER_COMPACT=$(printf '%s\n' "$RESPONSE_HANDLER_SCOPE" | tr -d '[:space:]')
+if ! printf '%s\n' "$RESPONSE_HANDLER_COMPACT" | grep -Fq \
+    'try{returnBoundedResponseBody.read(content,entity.getContentLength(),MAX_RESPONSE_BODY_BYTES);}finally{content.close();}'; then
+  printf '%s\n' "Search response streams must close after bounded reads on success and failure." >&2
+  exit 1
+fi
+
+for response_reader_contract in \
+  'if (contentLength > maxBytes)' \
+  'int remaining = maxBytes - total;' \
+  'int requested = (int) Math.min(buffer.length, (long) remaining + 1L);' \
+  'if (count > remaining)' \
+  'return output.toString("UTF-8");'; do
+  if ! grep -Fq "$response_reader_contract" "$RESPONSE_BODY_READER"; then
+    printf '%s\n' "Bounded response reader contract changed: $response_reader_contract" >&2
+    exit 1
+  fi
+done
+if [ ! -x "$RESPONSE_BODY_TEST" ] || \
+   ! grep -Fq 'LIMIT + 1' "$RESPONSE_BODY_TEST" || \
+   ! grep -Fq 'assertEquals(LIMIT, read(new byte[LIMIT], LIMIT, LIMIT).length());' "$RESPONSE_BODY_TEST" || \
+   ! grep -Fq 'assertEquals(LIMIT + 1, streamedOversize.bytesRead);' "$RESPONSE_BODY_TEST"; then
+  printf '%s\n' "Bounded response reader tests must cover exact and streaming overflow boundaries." >&2
+  exit 1
+fi
+if ! grep -Fq '$(ROOT)scripts/test-bounded-response-body.sh' "$ROOT_DIR/Makefile"; then
+  printf '%s\n' "Canonical tests must execute the bounded response reader harness." >&2
+  exit 1
+fi
+if [ ! -f "$RESPONSE_BODY_LIMIT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$RESPONSE_BODY_LIMIT_PLAN" || \
+   ! grep -Fq "Verification: Completed" "$RESPONSE_BODY_LIMIT_PLAN" || \
+   ! grep -Fq "Ten focused hostile mutations" "$RESPONSE_BODY_LIMIT_PLAN" || \
+   ! grep -Fq "make check" "$RESPONSE_BODY_LIMIT_PLAN"; then
+  printf '%s\n' "Search response-body limit plan must record completed verification." >&2
+  exit 1
+fi
+for response_body_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" \
+  "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! tr '\n' ' ' < "$response_body_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fiq "64 KiB response-body limit"; then
+    printf '%s\n' "$response_body_doc must document the 64 KiB response-body limit." >&2
     exit 1
   fi
 done

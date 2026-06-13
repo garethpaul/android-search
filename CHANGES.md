@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Added a 64 KiB response-body limit for declared and streaming search JSON,
+  with an executable Java boundary harness and guaranteed stream cleanup.
 - Narrowed the final search request fallback to runtime exceptions so fatal JVM
   errors continue to propagate to the Android platform.
 - Replaced throwable-bearing network and image errors with generic search
