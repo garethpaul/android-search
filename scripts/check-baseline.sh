@@ -19,6 +19,7 @@ ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
 EXCEPTION_LOG_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-exception-log-redaction.md"
+RUNTIME_EXCEPTION_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-runtime-exception-boundary.md"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
@@ -208,7 +209,7 @@ for exception_log_doc in "$README" "$SECURITY" "$ROOT_DIR/CHANGES.md"; do
 done
 
 HTTP_CLIENT_SCOPE=$(sed -n \
-  '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (Throwable t)/p' \
+  '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (RuntimeException e)/p' \
   "$NETWORK_REQUEST")
 HTTP_CLIENT_FINALLY=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | sed -n '/} finally {/,/^            }/p')
 if [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "new DefaultHttpClient(httpParams)")" -ne 1 ] || \
@@ -233,6 +234,36 @@ if [ ! -f "$HTTP_CLIENT_CLEANUP_PLAN" ] || \
   printf '%s\n' "Search HTTP client cleanup plan must record completed make check verification." >&2
   exit 1
 fi
+
+REQUEST_TASK_SCOPE=$(sed -n \
+  '/protected JSONObject doInBackground(String\.\.\. params)/,/protected void onPostExecute(JSONObject feed)/p' \
+  "$NETWORK_REQUEST")
+if [ "$(printf '%s\n' "$REQUEST_TASK_SCOPE" | grep -Fc '} catch (RuntimeException e) {')" -ne 1 ] || \
+   [ "$(printf '%s\n' "$REQUEST_TASK_SCOPE" | grep -Fc 'Log.e("network_request", "Unexpected search request error");')" -ne 1 ] || \
+   [ "$(printf '%s\n' "$REQUEST_TASK_SCOPE" | grep -Fc 'return errorResult("Search request failed");')" -ne 4 ]; then
+  printf '%s\n' "Search request task must keep its reviewed RuntimeException fallback." >&2
+  exit 1
+fi
+if printf '%s\n' "$REQUEST_TASK_SCOPE" | \
+    grep -Eq 'catch \((Throwable|[[:alnum:]_.$]*Error)([[:space:]]|\))'; then
+  printf '%s\n' "Search request task must not catch Throwable or an Error class." >&2
+  exit 1
+fi
+if [ ! -f "$RUNTIME_EXCEPTION_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$RUNTIME_EXCEPTION_PLAN" || \
+   ! grep -Fq "make check" "$RUNTIME_EXCEPTION_PLAN" || \
+   ! grep -Fq "hostile mutations" "$RUNTIME_EXCEPTION_PLAN"; then
+  printf '%s\n' "Search runtime-exception plan must record completed verification." >&2
+  exit 1
+fi
+for runtime_exception_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" \
+  "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! tr '\n' ' ' < "$runtime_exception_doc" | tr -s '[:space:]' ' ' | \
+      grep -Fiq "fatal JVM errors"; then
+    printf '%s\n' "$runtime_exception_doc must document propagation of fatal JVM errors." >&2
+    exit 1
+  fi
+done
 
 if ! grep -Fq 'return errorResult("Search request failed");' "$NETWORK_REQUEST"; then
   printf '%s\n' "Network failures must return an explicit error result." >&2

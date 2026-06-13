@@ -1,6 +1,6 @@
 # Search Runtime Exception Boundary
 
-Status: Planned
+Status: Completed
 
 ## Priority
 
@@ -12,7 +12,8 @@ reasonable application should not try to catch `Error`.
 
 ## Requirements
 
-- **R1:** Replace the broad final `Throwable` catch with `RuntimeException`.
+- **R1:** Replace the broad final `Throwable` catch with `RuntimeException`,
+  keeping checked query-encoding failures inside the reviewed IO boundary.
 - **R2:** Preserve protocol, IO, JSON, query encoding, HTTP cleanup, timeout,
   user-facing error-result, and redacted logging behavior.
 - **R3:** Reject reintroduction of `catch (Throwable)` or `catch (Error)` in the
@@ -26,8 +27,9 @@ reasonable application should not try to catch `Error`.
 
 **File:** `app/src/main/java/gpj/androidsearch/NetworkRequest.java`
 
-Catch unexpected `RuntimeException` instances while allowing fatal JVM errors
-to propagate according to the platform contract.
+Keep URL construction inside the existing checked-IO boundary, catch unexpected
+`RuntimeException` instances at the task boundary, and allow fatal JVM errors to
+propagate according to the platform contract.
 
 ### U2: Protect The Catch Contract
 
@@ -62,7 +64,20 @@ verification evidence.
 
 ## Verification
 
-Pending implementation and execution.
+- SDK-backed `make check` passed in an isolated tracked-file copy after the
+  source and checker changes. The first compile correctly exposed that query
+  URL construction still sat outside the checked-IO catch; moving URL and
+  `HttpGet` construction into that existing boundary made the full lint, unit
+  test, and debug assembly gate pass.
+- Nine hostile mutations were rejected: restoring `Throwable`, catching
+  `Error` or an `Error` subclass, substituting another fallback exception,
+  changing the generic log, removing an error result, removing deterministic
+  client shutdown, deleting the fatal-JVM guidance, and reverting this
+  completion status.
+- SDK-backed `make check` then passed from the canonical worktree and through
+  `make -C` from an external working directory.
+- Device execution and deliberate fatal-VM injection were not run; the checked
+  build and fail-closed source contracts verify this legacy sample boundary.
 
 ## Sources
 

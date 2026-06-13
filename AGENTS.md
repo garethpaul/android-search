@@ -53,6 +53,8 @@
 - Search request HTTP clients must shut down their connection managers in a
   `finally` path so success, error-status, empty-body, and exception responses
   release sockets deterministically.
+- Search request fallbacks may convert runtime exceptions into generic results,
+  but fatal JVM errors must propagate to the platform.
 - The search activity guards nullable ActionBar setup before applying icon and home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the searchable configuration or replacing the search icon.
 - Search action views are type-checked before SearchView casting so menu resource drift does not crash setup.

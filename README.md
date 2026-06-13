@@ -127,6 +127,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   bodies.
 - Network and image exceptions use generic search failure logs without
   exception messages, stack traces, query-bearing URLs, or response details.
+- The final request fallback handles runtime exceptions while fatal JVM errors
+  propagate to the Android platform.
 - Search intent handling guards null intents and missing result views while
   preserving the existing search action flow.
 - Android app-data backup is disabled by default for the search sample.
@@ -143,6 +145,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   query logging privacy contract.
 - See `docs/plans/2026-06-13-search-exception-log-redaction.md` for generic
   search failure logs and completed verification evidence.
+- See `docs/plans/2026-06-13-search-runtime-exception-boundary.md` for the
+  recoverable runtime and fatal JVM error boundary.
 - See `docs/plans/2026-06-09-search-image-download-guard.md` for the HTTPS
   image download guard.
 - See `docs/plans/2026-06-09-search-actionbar-guard.md` for the nullable

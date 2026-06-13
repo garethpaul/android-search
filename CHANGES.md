@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Narrowed the final search request fallback to runtime exceptions so fatal JVM
+  errors continue to propagate to the Android platform.
 - Replaced throwable-bearing network and image errors with generic search
   failure logs and added contracts against exception- or request-derived data.
 

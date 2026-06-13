@@ -59,10 +59,9 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
             // Instantiate an HttpClient
             HttpClient httpclient = new DefaultHttpClient(httpParams);
             try {
-                String url = buildSearchUrl(query);
-                HttpGet httpget = new HttpGet(url);
-
                 try {
+                    String url = buildSearchUrl(query);
+                    HttpGet httpget = new HttpGet(url);
                     Log.v("network_request", "ok");
                     //Log.i(getClass().getSimpleName(), "send  task - start");
                     ResponseHandler<String> responseHandler = new BasicResponseHandler();
@@ -89,7 +88,7 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
                 httpclient.getConnectionManager().shutdown();
             }
 
-        } catch (Throwable t) {
+        } catch (RuntimeException e) {
             Log.e("network_request", "Unexpected search request error");
             return errorResult("Search request failed");
         }

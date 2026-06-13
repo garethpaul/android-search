@@ -24,6 +24,8 @@ Priority:
 - Maintain SDK-free `make check` coverage for network and response guardrails
 - Keep root lint, test, and build gates wired to the Gradle project
 - Keep search queries and raw responses out of success-path device logs
+- Convert recoverable runtime failures into generic results without catching
+  fatal JVM errors
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is
