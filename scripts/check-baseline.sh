@@ -25,6 +25,7 @@ IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejec
 IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
 MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
 SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-rejection.md"
+STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -334,7 +335,10 @@ for response_reader_contract in \
   'int remaining = maxBytes - total;' \
   'int requested = (int) Math.min(buffer.length, (long) remaining + 1L);' \
   'if (count > remaining)' \
-  'return new String(body, "UTF-8");' \
+  'Charset.forName("UTF-8").newDecoder()' \
+  '.onMalformedInput(CodingErrorAction.REPORT)' \
+  '.onUnmappableCharacter(CodingErrorAction.REPORT)' \
+  '.decode(ByteBuffer.wrap(body))' \
   'return output.toByteArray();'; do
   if ! grep -Fq "$response_reader_contract" "$RESPONSE_BODY_READER"; then
     printf '%s\n' "Bounded response reader contract changed: $response_reader_contract" >&2
@@ -344,10 +348,30 @@ done
 if [ ! -x "$RESPONSE_BODY_TEST" ] || \
    ! grep -Fq 'LIMIT + 1' "$RESPONSE_BODY_TEST" || \
    ! grep -Fq 'assertEquals(LIMIT, read(new byte[LIMIT], LIMIT, LIMIT).length());' "$RESPONSE_BODY_TEST" || \
-   ! grep -Fq 'assertEquals(LIMIT + 1, streamedOversize.bytesRead);' "$RESPONSE_BODY_TEST"; then
+   ! grep -Fq 'assertEquals(LIMIT + 1, streamedOversize.bytesRead);' "$RESPONSE_BODY_TEST" || \
+   ! grep -Fq 'expectMalformedUtf8(new byte[] {(byte) 0xc3, 0x28});' "$RESPONSE_BODY_TEST" || \
+   ! grep -Fq 'malformed UTF-8 response was accepted' "$RESPONSE_BODY_TEST"; then
   printf '%s\n' "Bounded response reader tests must cover exact and streaming overflow boundaries." >&2
   exit 1
 fi
+if grep -Fq 'new String(body, "UTF-8")' "$RESPONSE_BODY_READER"; then
+  printf '%s\n' "Search JSON decoding must not replace malformed UTF-8." >&2
+  exit 1
+fi
+if [ ! -f "$STRICT_UTF8_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$STRICT_UTF8_PLAN" || \
+   ! grep -Fq "make check" "$STRICT_UTF8_PLAN" || \
+   ! grep -Fq "mutations" "$STRICT_UTF8_PLAN"; then
+  printf '%s\n' "Search strict UTF-8 plan must record completed verification." >&2
+  exit 1
+fi
+for strict_utf8_doc in "$ROOT_DIR/AGENTS.md" "$README" "$SECURITY" \
+  "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! grep -Fiq "reject malformed UTF-8 search JSON" "$strict_utf8_doc"; then
+    printf '%s\n' "$strict_utf8_doc must document strict search JSON decoding." >&2
+    exit 1
+  fi
+done
 if ! grep -Fq '$(ROOT)scripts/test-bounded-response-body.sh' "$ROOT_DIR/Makefile"; then
   printf '%s\n' "Canonical tests must execute the bounded response reader harness." >&2
   exit 1

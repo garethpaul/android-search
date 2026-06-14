@@ -5,6 +5,7 @@
 - Required JSON and image response media types before acquiring network body
   streams, including parameter and structured `+json` handling.
 - Disabled redirects for fixed-endpoint JSON search requests.
+- Search clients reject malformed UTF-8 search JSON before JSON parsing.
 - Added a dependency-free Java media-type matrix to the canonical test gate.
 
 ## 2026-06-13

@@ -3,7 +3,9 @@ package gpj.androidsearch;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 
 final class BoundedResponseBody {
     private static final int BUFFER_SIZE = 4096;
@@ -14,11 +16,11 @@ final class BoundedResponseBody {
     static String read(InputStream input, long contentLength, int maxBytes)
             throws IOException {
         byte[] body = readBytes(input, contentLength, maxBytes);
-        try {
-            return new String(body, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new AssertionError(e);
-        }
+        return Charset.forName("UTF-8").newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(body))
+                .toString();
     }
 
     static byte[] readBytes(InputStream input, long contentLength, int maxBytes)

@@ -51,6 +51,7 @@ Helpful reports include:
   errors remain visible to the Android platform instead of being swallowed.
 - Search JSON uses a 64 KiB response-body limit for declared and streamed
   content before parsing, while retaining privacy-safe failure handling.
+- Search clients reject malformed UTF-8 search JSON before JSON parsing.
 - Search JSON and image downloads reject missing or mismatched declared media
   types before reading response bytes.
 

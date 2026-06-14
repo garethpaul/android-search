@@ -37,6 +37,7 @@
   minimum baseline.
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Preserve the 64 KiB response-body limit before parsing backend JSON.
+- Reject malformed UTF-8 search JSON before JSON parsing.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
 
 ## PR / change guidance

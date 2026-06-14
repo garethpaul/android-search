@@ -30,6 +30,7 @@ public final class BoundedResponseBodyTest {
         assertEquals("\u20ac", read(new byte[] {
                 (byte) 0xe2, (byte) 0x82, (byte) 0xac
         }, -1, LIMIT));
+        expectMalformedUtf8(new byte[] {(byte) 0xc3, 0x28});
 
         expectIOException(new byte[LIMIT + 1], LIMIT + 1, LIMIT);
         expectIOException(new byte[LIMIT + 1], -1, LIMIT);
@@ -78,6 +79,15 @@ public final class BoundedResponseBodyTest {
             read(new byte[0], 0, maxBytes);
             throw new AssertionError("invalid limit was accepted");
         } catch (IllegalArgumentException expected) {
+            // Expected.
+        }
+    }
+
+    private static void expectMalformedUtf8(byte[] value) throws Exception {
+        try {
+            read(value, value.length, LIMIT);
+            throw new AssertionError("malformed UTF-8 response was accepted");
+        } catch (IOException expected) {
             // Expected.
         }
     }
