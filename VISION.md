@@ -32,6 +32,7 @@ Priority:
   fatal JVM errors
 - Keep the 64 KiB response-body limit enforced before backend JSON parsing
 - Reject malformed UTF-8 search JSON before parsing backend responses
+- Search JSON responses require successful 2xx status before entity access
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
 - Image downloads reject redirects and non-success responses before decoding.
 - Keep Android app-data backup disabled by default for the sample

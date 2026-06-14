@@ -25,6 +25,7 @@ IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejec
 IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
 MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
 SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-rejection.md"
+JSON_SUCCESS_STATUS_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-json-success-status.md"
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-verification-checklist.md"
@@ -302,12 +303,36 @@ done
 for response_body_contract in \
   'private static final int MAX_RESPONSE_BODY_BYTES = 64 * 1024;' \
   'private static ResponseHandler<String> boundedResponseHandler()' \
-  'if (statusLine.getStatusCode() >= 300)' \
+  'int statusCode = statusLine.getStatusCode();' \
+  'if (statusCode < 200 || statusCode >= 300)' \
   'BoundedResponseBody.read(content,' \
   'entity.getContentLength(), MAX_RESPONSE_BODY_BYTES);' \
   'ResponseHandler<String> responseHandler = boundedResponseHandler();'; do
   if ! grep -Fq "$response_body_contract" "$NETWORK_REQUEST"; then
     printf '%s\n' "Search response-body limit integration changed: $response_body_contract" >&2
+    exit 1
+  fi
+done
+
+status_line=$(grep -nF 'int statusCode = statusLine.getStatusCode();' "$NETWORK_REQUEST" | head -1 | cut -d: -f1)
+success_guard_line=$(grep -nF 'if (statusCode < 200 || statusCode >= 300)' "$NETWORK_REQUEST" | head -1 | cut -d: -f1)
+entity_line=$(grep -nF 'HttpEntity entity = response.getEntity();' "$NETWORK_REQUEST" | head -1 | cut -d: -f1)
+if [ -z "$status_line" ] || [ -z "$success_guard_line" ] || [ -z "$entity_line" ] || \
+   [ "$status_line" -ge "$success_guard_line" ] || [ "$success_guard_line" -ge "$entity_line" ]; then
+  printf '%s\n' "Search JSON must require a 2xx status before response entity access." >&2
+  exit 1
+fi
+
+for json_success_status_document in "$README" "$SECURITY" "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! grep -Fq "JSON responses require successful 2xx status" "$json_success_status_document"; then
+    printf '%s\n' "$json_success_status_document must document the JSON success-status boundary." >&2
+    exit 1
+  fi
+done
+
+for json_success_status_plan_contract in "Status: Completed" "make check" "mutations"; do
+  if ! grep -Fqi "$json_success_status_plan_contract" "$JSON_SUCCESS_STATUS_PLAN"; then
+    printf '%s\n' "JSON success-status plan must preserve completion evidence: $json_success_status_plan_contract" >&2
     exit 1
   fi
 done

@@ -1,6 +1,6 @@
 # Require Successful JSON HTTP Status
 
-Status: Planned
+Status: Completed
 
 ## Context
 
@@ -30,3 +30,19 @@ from final successful `2xx` responses, matching the image transport boundary.
 - No live backend, proxy, or controlled informational response was exercised.
 - Existing stacked pull requests remain open and require explicit owner
   authorization before merge or closure.
+
+## Verification Results
+
+Completed on 2026-06-14:
+
+- SDK-backed `make check` passed source contracts, debug and release Java
+  compilation, zero-issue Android lint, bounded response and media-type tests,
+  both Gradle unit-test variants, and debug APK assembly under Amazon Corretto
+  8 and Android API 22.
+- External-working-directory `make check` passed with Android SDK variables
+  intentionally unset.
+- Eight hostile mutations covering lower and upper status bounds, pre-entity
+  ordering, maintained documentation, and completed-plan status were rejected.
+- Exact diff, generated-artifact, changed-line secret-pattern, and whitespace
+  audits passed before commit.
+- No live backend, proxy, or controlled informational response was exercised.

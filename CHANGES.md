@@ -2,6 +2,7 @@
 
 ## 2026-06-14
 
+- Search JSON responses require successful 2xx status before entity access.
 - Search cancellation now aborts active JSON requests and disconnects active
   image transports, including cancellation races during transport publication.
 - Added an exact-commit Android Search device verification matrix for query

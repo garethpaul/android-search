@@ -71,8 +71,9 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
             public String handleResponse(HttpResponse response)
                     throws ClientProtocolException, IOException {
                 StatusLine statusLine = response.getStatusLine();
-                if (statusLine.getStatusCode() >= 300) {
-                    throw new HttpResponseException(statusLine.getStatusCode(),
+                int statusCode = statusLine.getStatusCode();
+                if (statusCode < 200 || statusCode >= 300) {
+                    throw new HttpResponseException(statusCode,
                             statusLine.getReasonPhrase());
                 }
 

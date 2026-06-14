@@ -97,6 +97,7 @@ evidence, and explicit unexecuted rows.
   timeouts before decoding the bitmap.
 - Image downloads reject redirects and non-success responses before decoding.
 - Search JSON requests reject redirects before response validation.
+- Search JSON responses require successful 2xx status before entity access.
 - Search HTTP clients shut down their connection managers after every request
   outcome so repeated queries do not retain socket pools.
 - Replaced or paused searches abort their active JSON request and disconnect
