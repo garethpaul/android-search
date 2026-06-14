@@ -26,6 +26,7 @@ IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
 MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
 SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-rejection.md"
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md"
+QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -424,15 +425,30 @@ if grep -Fq 'Log.v("network_request", responseBody)' "$NETWORK_REQUEST"; then
 fi
 
 for async_contract in \
-  "if (query == null || query.trim().length() == 0)" \
+  'MAX_SEARCH_QUERY_CHARACTERS = 200' \
+  'String normalizedQuery = query == null ? "" : query.trim();' \
+  'normalizedQuery.length() > MAX_SEARCH_QUERY_CHARACTERS' \
   "activeSearchRequest = new NetworkRequest()" \
   "protected void onPostExecute(JSONObject json)" \
   "if (activeSearchRequest != this || isFinishing() || isDestroyed())" \
   "displaySearchResult(json);" \
-  "activeSearchRequest.execute(query.trim());" \
+  "activeSearchRequest.execute(normalizedQuery);" \
   "private void displaySearchResult(JSONObject json)"; do
   if ! grep -Fq "$async_contract" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing asynchronous search contract: $async_contract" >&2
+    exit 1
+  fi
+done
+
+for query_length_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Search intents are trimmed and limited to 200 characters before URL encoding." "$ROOT_DIR/$query_length_doc"; then
+    printf '%s\n' "$query_length_doc must document the search query-length boundary." >&2
+    exit 1
+  fi
+done
+for query_length_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
+  if ! grep -Fq "$query_length_plan_contract" "$QUERY_LENGTH_PLAN"; then
+    printf '%s\n' "Search query-length plan must record completed verification: $query_length_plan_contract" >&2
     exit 1
   fi
 done

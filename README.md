@@ -1,5 +1,7 @@
 # android-search
 
+Search intents are trimmed and limited to 200 characters before URL encoding.
+
 <!-- README-OVERVIEW-IMAGE -->
 ![Project overview](docs/readme-overview.svg)
 

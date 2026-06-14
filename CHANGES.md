@@ -2,6 +2,7 @@
 
 ## 2026-06-14
 
+- Search intents are trimmed and limited to 200 characters before URL encoding.
 - Required JSON and image response media types before acquiring network body
   streams, including parameter and structured `+json` handling.
 - Disabled redirects for fixed-endpoint JSON search requests.

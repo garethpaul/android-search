@@ -34,6 +34,7 @@ public class MainActivity extends Activity {
     private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000;
     private static final int MAX_IMAGE_BODY_BYTES = 1024 * 1024;
     private static final long MAX_IMAGE_PIXELS = 4_000_000L;
+    private static final int MAX_SEARCH_QUERY_CHARACTERS = 200;
 
     private TextView textView;
     private NetworkRequest activeSearchRequest;
@@ -132,7 +133,9 @@ public class MainActivity extends Activity {
         String query = intent.getStringExtra(SearchManager.QUERY);
         cancelActiveRequests();
         clearResultImage();
-        if (query == null || query.trim().length() == 0) {
+        String normalizedQuery = query == null ? "" : query.trim();
+        if (normalizedQuery.length() == 0
+                || normalizedQuery.length() > MAX_SEARCH_QUERY_CHARACTERS) {
             textView.setText(R.string.search_request_failed);
             return;
         }
@@ -148,7 +151,7 @@ public class MainActivity extends Activity {
                 displaySearchResult(json);
             }
         };
-        activeSearchRequest.execute(query.trim());
+        activeSearchRequest.execute(normalizedQuery);
     }
 
     private void displaySearchResult(JSONObject json) {

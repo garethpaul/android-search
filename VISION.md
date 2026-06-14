@@ -1,5 +1,7 @@
 ## Android Search Vision
 
+Search intents are trimmed and limited to 200 characters before URL encoding.
+
 This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
 

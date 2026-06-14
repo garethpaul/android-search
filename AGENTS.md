@@ -49,6 +49,8 @@
 
 ## Safety and gotchas
 
+- Search intents are trimmed and limited to 200 characters before URL encoding.
+
 - Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.

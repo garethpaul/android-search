@@ -1,5 +1,7 @@
 # Security Policy
 
+Search intents are trimmed and limited to 200 characters before URL encoding.
+
 ## Supported Versions
 
 The supported security scope for `android-search` is the current default branch, `master`. Older commits, tags, branches, forks, demos, and generated artifacts are not actively supported unless the repository explicitly marks them as maintained.
