@@ -222,6 +222,9 @@ public class MainActivity extends Activity {
                 if (responseCode < 200 || responseCode >= 300) {
                     throw new IOException("Search image request failed");
                 }
+                if (!ResponseMediaType.isImage(connection.getContentType())) {
+                    throw new IOException("Search image media type is invalid");
+                }
                 in = connection.getInputStream();
                 byte[] imageBody = BoundedResponseBody.readBytes(
                         in,

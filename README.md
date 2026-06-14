@@ -93,6 +93,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   outcome so repeated queries do not retain socket pools.
 - Search JSON downloads enforce a 64 KiB response-body limit for declared and
   streaming lengths before parsing, preventing unbounded response allocation.
+- Search JSON and image downloads require matching declared media types before
+  response streams are read.
 - The search activity guards nullable ActionBar setup before applying icon and
   home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the

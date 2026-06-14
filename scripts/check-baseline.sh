@@ -23,8 +23,11 @@ RUNTIME_EXCEPTION_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-runtime-exception
 RESPONSE_BODY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-response-body-limit.md"
 IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejection.md"
 IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
+MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
+MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
+MEDIA_TYPE_TEST="$ROOT_DIR/scripts/test-response-media-type.sh"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
@@ -292,6 +295,11 @@ RESPONSE_HANDLER_SCOPE=$(sed -n \
   "$NETWORK_REQUEST")
 RESPONSE_HANDLER_COMPACT=$(printf '%s\n' "$RESPONSE_HANDLER_SCOPE" | tr -d '[:space:]')
 if ! printf '%s\n' "$RESPONSE_HANDLER_COMPACT" | grep -Fq \
+    'HeadercontentType=entity.getContentType();if(contentType==null||!ResponseMediaType.isJson(contentType.getValue())){thrownewClientProtocolException("SearchresponsemediatypeisnotJSON");}InputStreamcontent=entity.getContent();'; then
+  printf '%s\n' "Search JSON media type must be validated before response stream acquisition." >&2
+  exit 1
+fi
+if ! printf '%s\n' "$RESPONSE_HANDLER_COMPACT" | grep -Fq \
     'try{returnBoundedResponseBody.read(content,entity.getContentLength(),MAX_RESPONSE_BODY_BYTES);}finally{content.close();}'; then
   printf '%s\n' "Search response streams must close after bounded reads on success and failure." >&2
   exit 1
@@ -533,8 +541,42 @@ done
 
 MAIN_ACTIVITY_COMPACT=$(tr -d '[:space:]' < "$MAIN_ACTIVITY")
 if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
-    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}in=connection.getInputStream();'; then
+    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
   printf '%s\n' "Search image redirects and non-success responses must be rejected before reading bytes." >&2
+  exit 1
+fi
+
+if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
+    'if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
+  printf '%s\n' "Search image media type must be validated before image stream acquisition." >&2
+  exit 1
+fi
+
+for media_type_contract in \
+  'return "application/json".equals(mediaType)' \
+  'hasSubtype(mediaType, "application")' \
+  'mediaType.length() > "application/+json".length()' \
+  'mediaType.endsWith("+json")' \
+  'return hasSubtype(normalize(value), "image");' \
+  "String prefix = type + \"/\";" \
+  'if (!isTokenCharacter(mediaType.charAt(i)))' \
+  '"!#$%&'\''*+-.^_`|~".indexOf(value) >= 0;' \
+  "int parameterStart = value.indexOf(';');" \
+  'mediaType.trim().toLowerCase(Locale.US);'; do
+  if ! grep -Fq "$media_type_contract" "$MEDIA_TYPE_READER"; then
+    printf '%s\n' "Search response media-type classifier changed: $media_type_contract" >&2
+    exit 1
+  fi
+done
+if [ ! -x "$MEDIA_TYPE_TEST" ] || \
+   ! grep -Fq 'application/problem+json' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'application/+json' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'application/problem()+json' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'IMAGE/JPEG ; charset=binary' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'image/png/extra' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'image/@png' "$MEDIA_TYPE_TEST" || \
+   ! grep -Fq 'application/octet-stream' "$MEDIA_TYPE_TEST"; then
+  printf '%s\n' "Search response media-type host tests are incomplete." >&2
   exit 1
 fi
 
@@ -677,8 +719,17 @@ for make_contract in \
 done
 
 if [ "$(grep -Fc '$(ROOT)scripts/check-baseline.sh' "$ROOT_DIR/Makefile")" -ne 1 ] || \
-   [ "$(grep -Fc '$(ROOT)scripts/test-bounded-response-body.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
-  printf '%s\n' "Baseline and bounded-response tests must use the protected root." >&2
+   [ "$(grep -Fc '$(ROOT)scripts/test-bounded-response-body.sh' "$ROOT_DIR/Makefile")" -ne 1 ] || \
+   [ "$(grep -Fc '$(ROOT)scripts/test-response-media-type.sh' "$ROOT_DIR/Makefile")" -ne 1 ]; then
+  printf '%s\n' "Baseline and response tests must use the protected root." >&2
+  exit 1
+fi
+
+if [ ! -f "$MEDIA_TYPE_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$MEDIA_TYPE_PLAN" || \
+   ! grep -Fq "make check" "$MEDIA_TYPE_PLAN" || \
+   ! grep -Fq "focused mutations" "$MEDIA_TYPE_PLAN"; then
+  printf '%s\n' "Search response media-type plan must record completed verification." >&2
   exit 1
 fi
 

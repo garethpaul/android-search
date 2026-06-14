@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-14
+
+- Required JSON and image response media types before acquiring network body
+  streams, including parameter and structured `+json` handling.
+- Added a dependency-free Java media-type matrix to the canonical test gate.
+
 ## 2026-06-13
 
 - Image downloads bound compressed bodies and decoded pixel dimensions before allocation.

@@ -3,6 +3,7 @@ package gpj.androidsearch;
 import android.os.AsyncTask;
 import android.util.Log;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -64,6 +65,12 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
                 HttpEntity entity = response.getEntity();
                 if (entity == null) {
                     return null;
+                }
+                Header contentType = entity.getContentType();
+                if (contentType == null
+                        || !ResponseMediaType.isJson(contentType.getValue())) {
+                    throw new ClientProtocolException(
+                            "Search response media type is not JSON");
                 }
 
                 InputStream content = entity.getContent();
