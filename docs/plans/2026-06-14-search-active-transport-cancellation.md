@@ -1,6 +1,6 @@
 # Android Search Active Transport Cancellation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -62,14 +62,19 @@ documentation, and completed verification evidence.
 
 ## Verification
 
-To be recorded after implementation:
-
-- POSIX shell syntax, portable source contracts, response-body tests, and
-  media-type tests.
-- Java 8 / Android API 22 lint, unit tests, and debug assembly.
-- Repository-root and external-directory `make check`.
-- Isolated search abort, image disconnect, publication-race, ownership-clear,
-  documentation, and completed-plan mutations.
+- `sh -n scripts/check-baseline.sh`, portable source contracts, bounded
+  response-body tests, and media-type tests passed.
+- With Amazon Corretto 8 and the Android API 22 SDK,
+  `./gradlew lint test assembleDebug --no-daemon` passed debug/release
+  compilation, zero-issue lint, both unit-test variants, and debug APK
+  assembly.
+- Repository-root `make check` passed with the API 22 SDK configured, and an
+  external-directory invocation passed with SDK variables unset to exercise
+  the location-independent portable path.
+- Ten isolated mutations were rejected for search abort ordering, late search
+  publication, search ownership clearing, image disconnect ordering, late
+  image publication, image ownership clearing, caller integration,
+  documentation, and completed plan evidence.
 
 ## Scope Boundaries
 

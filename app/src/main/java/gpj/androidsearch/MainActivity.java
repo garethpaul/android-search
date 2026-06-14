@@ -186,7 +186,7 @@ public class MainActivity extends Activity {
 
     private void cancelActiveRequests() {
         if (activeSearchRequest != null) {
-            activeSearchRequest.cancel(true);
+            activeSearchRequest.cancelRequest();
             activeSearchRequest = null;
         }
         cancelActiveImageRequest();
@@ -194,13 +194,14 @@ public class MainActivity extends Activity {
 
     private void cancelActiveImageRequest() {
         if (activeImageRequest != null) {
-            activeImageRequest.cancel(true);
+            activeImageRequest.cancelDownload();
             activeImageRequest = null;
         }
     }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
+        private volatile HttpsURLConnection activeConnection;
 
         public DownloadImageTask(ImageView bmImage) {
             this.bmImage = bmImage;
@@ -209,6 +210,9 @@ public class MainActivity extends Activity {
         protected Bitmap doInBackground(String... urls) {
             if (urls == null || urls.length == 0 || urls[0] == null
                     || urls[0].trim().length() == 0) {
+                return null;
+            }
+            if (isCancelled()) {
                 return null;
             }
 
@@ -221,6 +225,11 @@ public class MainActivity extends Activity {
                 connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
                 connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
+                activeConnection = connection;
+                if (isCancelled()) {
+                    connection.disconnect();
+                    return null;
+                }
                 int responseCode = connection.getResponseCode();
                 if (responseCode < 200 || responseCode >= 300) {
                     throw new IOException("Search image request failed");
@@ -245,10 +254,26 @@ public class MainActivity extends Activity {
                     }
                 }
                 if (connection != null) {
+                    if (activeConnection == connection) {
+                        activeConnection = null;
+                    }
                     connection.disconnect();
                 }
             }
             return mIcon11;
+        }
+
+        void cancelDownload() {
+            HttpsURLConnection connection = activeConnection;
+            if (connection != null) {
+                connection.disconnect();
+            }
+            cancel(true);
+            HttpsURLConnection publishedAfterCancellation = activeConnection;
+            if (publishedAfterCancellation != null
+                    && publishedAfterCancellation != connection) {
+                publishedAfterCancellation.disconnect();
+            }
         }
 
         protected void onPostExecute(Bitmap result) {

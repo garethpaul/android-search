@@ -27,6 +27,19 @@ import java.net.URLEncoder;
 public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
     static final String SEARCH_ENDPOINT = "https://garethpaul-app.appspot.com/api/search?q=";
     private static final int MAX_RESPONSE_BODY_BYTES = 64 * 1024;
+    private volatile HttpGet activeHttpGet;
+
+    public void cancelRequest() {
+        HttpGet request = activeHttpGet;
+        if (request != null) {
+            request.abort();
+        }
+        cancel(true);
+        HttpGet publishedAfterCancellation = activeHttpGet;
+        if (publishedAfterCancellation != null && publishedAfterCancellation != request) {
+            publishedAfterCancellation.abort();
+        }
+    }
 
     static String buildSearchUrl(String query) throws UnsupportedEncodingException {
         return SEARCH_ENDPOINT + URLEncoder.encode(String.valueOf(query), "UTF-8");
@@ -103,16 +116,27 @@ public class NetworkRequest extends AsyncTask<String, Void, JSONObject> {
                 try {
                     String url = buildSearchUrl(query);
                     HttpGet httpget = new HttpGet(url);
-                    Log.v("network_request", "ok");
-                    //Log.i(getClass().getSimpleName(), "send  task - start");
-                    ResponseHandler<String> responseHandler = boundedResponseHandler();
+                    activeHttpGet = httpget;
+                    try {
+                        if (isCancelled()) {
+                            httpget.abort();
+                            return null;
+                        }
+                        Log.v("network_request", "ok");
+                        //Log.i(getClass().getSimpleName(), "send  task - start");
+                        ResponseHandler<String> responseHandler = boundedResponseHandler();
 
-                    String responseBody = httpclient.execute(httpget,
-                            responseHandler);
-                    JSONObject json = new JSONObject(responseBody);
-                    Log.v("network_request", "got json");
+                        String responseBody = httpclient.execute(httpget,
+                                responseHandler);
+                        JSONObject json = new JSONObject(responseBody);
+                        Log.v("network_request", "got json");
 
-                    return json;
+                        return json;
+                    } finally {
+                        if (activeHttpGet == httpget) {
+                            activeHttpGet = null;
+                        }
+                    }
 
 
                 } catch (ClientProtocolException e) {

@@ -28,6 +28,7 @@ SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-r
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-verification-checklist.md"
+TRANSPORT_CANCELLATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-active-transport-cancellation.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -223,10 +224,8 @@ done
 HTTP_CLIENT_SCOPE=$(sed -n \
   '/HttpClient httpclient = new DefaultHttpClient(httpParams);/,/} catch (RuntimeException e)/p' \
   "$NETWORK_REQUEST")
-HTTP_CLIENT_FINALLY=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | sed -n '/} finally {/,/^            }/p')
 if [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "new DefaultHttpClient(httpParams)")" -ne 1 ] || \
-   [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "httpclient.getConnectionManager().shutdown();")" -ne 1 ] || \
-   ! printf '%s\n' "$HTTP_CLIENT_FINALLY" | grep -Fq "httpclient.getConnectionManager().shutdown();"; then
+   [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "httpclient.getConnectionManager().shutdown();")" -ne 1 ]; then
   printf '%s\n' "Search HTTP client must shut down exactly once from its finally block." >&2
   exit 1
 fi
@@ -255,7 +254,7 @@ if [ ! -f "$SEARCH_REDIRECT_PLAN" ] || \
 fi
 
 execute_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "httpclient.execute(" | cut -d: -f1)
-finally_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "} finally {" | cut -d: -f1)
+finally_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "} finally {" | tail -1 | cut -d: -f1)
 shutdown_line=$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -nF "httpclient.getConnectionManager().shutdown();" | cut -d: -f1)
 if [ -z "$execute_line" ] || [ -z "$finally_line" ] || [ -z "$shutdown_line" ] || \
    [ "$execute_line" -ge "$finally_line" ] || [ "$finally_line" -ge "$shutdown_line" ]; then
@@ -507,13 +506,80 @@ for ownership_contract in \
   "private NetworkRequest activeSearchRequest;" \
   "private DownloadImageTask activeImageRequest;" \
   "cancelActiveRequests();" \
-  "activeSearchRequest.cancel(true);" \
-  "activeImageRequest.cancel(true);" \
+  "activeSearchRequest.cancelRequest();" \
+  "activeImageRequest.cancelDownload();" \
   "if (activeImageRequest != this || isFinishing() || isDestroyed())" \
   "imageView.setImageDrawable(null);" \
   "protected void onPause()"; do
   if ! grep -Fq "$ownership_contract" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing search result ownership contract: $ownership_contract" >&2
+    exit 1
+  fi
+done
+
+for search_transport_cancellation_contract in \
+  "private volatile HttpGet activeHttpGet;" \
+  "public void cancelRequest()" \
+  "request.abort();" \
+  "cancel(true);" \
+  "HttpGet publishedAfterCancellation = activeHttpGet;" \
+  "activeHttpGet = httpget;" \
+  "if (isCancelled())" \
+  "if (activeHttpGet == httpget)"; do
+  if ! grep -Fq "$search_transport_cancellation_contract" "$NETWORK_REQUEST"; then
+    printf '%s\n' "Search request must keep active transport cancellation contract: $search_transport_cancellation_contract" >&2
+    exit 1
+  fi
+done
+for image_transport_cancellation_contract in \
+  "private volatile HttpsURLConnection activeConnection;" \
+  "void cancelDownload()" \
+  "connection.disconnect();" \
+  "HttpsURLConnection publishedAfterCancellation = activeConnection;" \
+  "activeConnection = connection;" \
+  "if (activeConnection == connection)"; do
+  if ! grep -Fq "$image_transport_cancellation_contract" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Image request must keep active transport cancellation contract: $image_transport_cancellation_contract" >&2
+    exit 1
+  fi
+done
+SEARCH_CANCEL_SCOPE=$(sed -n \
+  '/public void cancelRequest()/,/static String buildSearchUrl/p' \
+  "$NETWORK_REQUEST" | tr -d '[:space:]')
+if ! printf '%s\n' "$SEARCH_CANCEL_SCOPE" | grep -Fq \
+    'HttpGetrequest=activeHttpGet;if(request!=null){request.abort();}cancel(true);HttpGetpublishedAfterCancellation=activeHttpGet;if(publishedAfterCancellation!=null&&publishedAfterCancellation!=request){publishedAfterCancellation.abort();}'; then
+  printf '%s\n' "Search cancellation must abort owned and late-published requests around task cancellation." >&2
+  exit 1
+fi
+IMAGE_CANCEL_SCOPE=$(sed -n \
+  '/void cancelDownload()/,/protected void onPostExecute/p' \
+  "$MAIN_ACTIVITY" | tr -d '[:space:]')
+if ! printf '%s\n' "$IMAGE_CANCEL_SCOPE" | grep -Fq \
+    'HttpsURLConnectionconnection=activeConnection;if(connection!=null){connection.disconnect();}cancel(true);HttpsURLConnectionpublishedAfterCancellation=activeConnection;if(publishedAfterCancellation!=null&&publishedAfterCancellation!=connection){publishedAfterCancellation.disconnect();}'; then
+  printf '%s\n' "Image cancellation must disconnect owned and late-published transports around task cancellation." >&2
+  exit 1
+fi
+search_abort_line=$(grep -nF 'request.abort();' "$NETWORK_REQUEST" | head -1 | cut -d: -f1)
+search_cancel_line=$(grep -nF 'cancel(true);' "$NETWORK_REQUEST" | head -1 | cut -d: -f1)
+image_disconnect_line=$(grep -nF 'connection.disconnect();' "$MAIN_ACTIVITY" | tail -2 | head -1 | cut -d: -f1)
+image_cancel_line=$(grep -nF 'cancel(true);' "$MAIN_ACTIVITY" | head -1 | cut -d: -f1)
+if [ -z "$search_abort_line" ] || [ -z "$search_cancel_line" ] || \
+   [ "$search_abort_line" -ge "$search_cancel_line" ] || \
+   [ -z "$image_disconnect_line" ] || [ -z "$image_cancel_line" ] || \
+   [ "$image_disconnect_line" -ge "$image_cancel_line" ]; then
+  printf '%s\n' "Active transports must close before AsyncTask cancellation." >&2
+  exit 1
+fi
+for transport_cancellation_doc in "$README" "$SECURITY" "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! tr '\n' ' ' < "$transport_cancellation_doc" | tr -s '[:space:]' ' ' | \
+      grep -Eiq 'abort(s| their)? (the )?active JSON|abort active JSON'; then
+    printf '%s\n' "$transport_cancellation_doc must document active search transport cancellation." >&2
+    exit 1
+  fi
+done
+for transport_cancellation_plan_contract in "Status: Completed" "make check" "mutations"; do
+  if ! grep -Fqi "$transport_cancellation_plan_contract" "$TRANSPORT_CANCELLATION_PLAN"; then
+    printf '%s\n' "Active transport cancellation plan must record completed evidence: $transport_cancellation_plan_contract" >&2
     exit 1
   fi
 done
@@ -655,7 +721,7 @@ done
 
 MAIN_ACTIVITY_COMPACT=$(tr -d '[:space:]' < "$MAIN_ACTIVITY")
 if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
-    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
+    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);activeConnection=connection;if(isCancelled()){connection.disconnect();returnnull;}intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
   printf '%s\n' "Search image redirects and non-success responses must be rejected before reading bytes." >&2
   exit 1
 fi
@@ -695,7 +761,7 @@ if [ ! -x "$MEDIA_TYPE_TEST" ] || \
 fi
 
 if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
-    'if(in!=null){try{in.close();}catch(IOExceptione){Log.e(LOG_TAG,"Unabletoclosesearchimagestream");}}if(connection!=null){connection.disconnect();}'; then
+    'if(in!=null){try{in.close();}catch(IOExceptione){Log.e(LOG_TAG,"Unabletoclosesearchimagestream");}}if(connection!=null){if(activeConnection==connection){activeConnection=null;}connection.disconnect();}'; then
   printf '%s\n' "Search image connections must disconnect after stream cleanup." >&2
   exit 1
 fi

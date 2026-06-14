@@ -56,6 +56,8 @@ Helpful reports include:
 - Search clients reject malformed UTF-8 search JSON before JSON parsing.
 - Search JSON and image downloads reject missing or mismatched declared media
   types before reading response bytes.
+- Search cancellation aborts the active JSON request and disconnects the active
+  image transport so superseded tasks do not retain network resources.
 
 ## Mobile Privacy Notes
 

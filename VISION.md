@@ -44,6 +44,7 @@ Priority:
 - Keep search intent handling tolerant of null intents and missing result views
 - Keep network completion asynchronous and ignore results after activity
   teardown
+- Abort active JSON and image transports when search task ownership is cancelled
 - Keep search and image results owned by the latest active request
 - Keep the SDK-free `make check` baseline running in GitHub Actions
 - Keep the legacy Gradle runtime behind a checksum-verified generated wrapper

@@ -2,6 +2,8 @@
 
 ## 2026-06-14
 
+- Search cancellation now aborts active JSON requests and disconnects active
+  image transports, including cancellation races during transport publication.
 - Added an exact-commit Android Search device verification matrix for query
   boundaries, cancellation, backend failures, response and image guards,
   rotation, relaunch, and privacy-safe evidence, with every runtime row explicitly unexecuted.
