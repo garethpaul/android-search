@@ -84,6 +84,11 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
+Android search matrix. It covers valid and invalid queries, cancellation,
+offline and protocol failures, image limits, rotation, relaunch, privacy-safe
+evidence, and explicit unexecuted rows.
+
 ## Configuration and Secrets
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
@@ -177,6 +182,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   intent and result view null-safety contract.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
   Actions baseline.
+- See `docs/plans/2026-06-14-android-search-device-verification-checklist.md`
+  for the device evidence matrix and runtime non-claims.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

@@ -47,6 +47,8 @@ Priority:
 - Keep search and image results owned by the latest active request
 - Keep the SDK-free `make check` baseline running in GitHub Actions
 - Keep the legacy Gradle runtime behind a checksum-verified generated wrapper
+- Keep exact-commit Android Search device verification matrix evidence separate
+  from portable checks, with unexecuted backend, network, and UI rows explicit
 
 Next priorities:
 
@@ -55,6 +57,8 @@ Next priorities:
 - Document the expected API response shape
 - Evaluate Gradle runtime, SDK, and test modernization together in a dedicated
   compatibility pass; wrapper hardening is separate
+- Execute the device verification matrix with synthetic queries and
+  privacy-safe backend, network, and lifecycle evidence
 
 Contribution rules:
 

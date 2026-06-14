@@ -2,6 +2,9 @@
 
 ## 2026-06-14
 
+- Added an exact-commit Android Search device verification matrix for query
+  boundaries, cancellation, backend failures, response and image guards,
+  rotation, relaunch, and privacy-safe evidence, with every runtime row explicitly unexecuted.
 - Search intents are trimmed and limited to 200 characters before URL encoding.
 - Required JSON and image response media types before acquiring network body
   streams, including parameter and structured `+json` handling.

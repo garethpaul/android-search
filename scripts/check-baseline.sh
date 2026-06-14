@@ -27,6 +27,7 @@ MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
 SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-rejection.md"
 STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
+DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-verification-checklist.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -449,6 +450,55 @@ done
 for query_length_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
   if ! grep -Fq "$query_length_plan_contract" "$QUERY_LENGTH_PLAN"; then
     printf '%s\n' "Search query-length plan must record completed verification: $query_length_plan_contract" >&2
+    exit 1
+  fi
+done
+
+for required_device_path in "$ROOT_DIR/DEVICE_VERIFICATION.md" "$DEVICE_VERIFICATION_PLAN"; do
+  if [ ! -f "$required_device_path" ]; then
+    printf '%s\n' "Required Android Search device verification file is missing: ${required_device_path#"$ROOT_DIR/"}" >&2
+    exit 1
+  fi
+done
+
+for device_contract in \
+  'commit SHA and pull request' \
+  'synthetic query' \
+  'Valid search' \
+  'Overlength query' \
+  'Rapid repeated searches' \
+  'Cancel active search' \
+  'Offline request' \
+  'Redirected JSON' \
+  'Malformed UTF-8' \
+  'Oversized JSON' \
+  'Image redirect' \
+  'Oversized image' \
+  'Rotation during search' \
+  'Do not convert `not run` into passing evidence.' \
+  'device identifiers, response bodies, account names' \
+  'every Android, backend, network, and UI row as unexecuted'; do
+  if ! grep -Fq "$device_contract" "$ROOT_DIR/DEVICE_VERIFICATION.md"; then
+    printf '%s\n' "Android Search device checklist must keep contract: $device_contract" >&2
+    exit 1
+  fi
+done
+
+if ! grep -Fq 'DEVICE_VERIFICATION.md' "$README" || \
+   ! grep -Fq 'explicit unexecuted rows' "$README" || \
+   ! grep -Fq 'Android Search device verification matrix' "$ROOT_DIR/VISION.md" || \
+   ! grep -Fq 'every runtime row explicitly unexecuted' "$ROOT_DIR/CHANGES.md"; then
+  printf '%s\n' 'Repository guidance must document the unexecuted Android Search device matrix.' >&2
+  exit 1
+fi
+
+for device_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'hostile mutations' \
+  'No Android SDK, emulator, backend fixture, controlled network, physical device, or live UI scenario was executed'; do
+  if ! grep -Fq "$device_plan_contract" "$DEVICE_VERIFICATION_PLAN"; then
+    printf '%s\n' "Android Search device plan must keep completion evidence: $device_plan_contract" >&2
     exit 1
   fi
 done
