@@ -24,6 +24,7 @@ RESPONSE_BODY_LIMIT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-response-body-l
 IMAGE_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-redirect-rejection.md"
 IMAGE_BODY_PLAN="$ROOT_DIR/docs/plans/2026-06-13-search-image-body-limit.md"
 MEDIA_TYPE_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-media-types.md"
+SEARCH_REDIRECT_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-response-redirect-rejection.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -224,6 +225,29 @@ if [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "new DefaultHttpClient(htt
    [ "$(printf '%s\n' "$HTTP_CLIENT_SCOPE" | grep -Fc "httpclient.getConnectionManager().shutdown();")" -ne 1 ] || \
    ! printf '%s\n' "$HTTP_CLIENT_FINALLY" | grep -Fq "httpclient.getConnectionManager().shutdown();"; then
   printf '%s\n' "Search HTTP client must shut down exactly once from its finally block." >&2
+  exit 1
+fi
+
+if [ "$(grep -Fc 'import org.apache.http.client.params.HttpClientParams;' "$NETWORK_REQUEST")" -ne 1 ] || \
+   [ "$(grep -Fc 'HttpClientParams.setRedirecting(httpParams, false);' "$NETWORK_REQUEST")" -ne 1 ]; then
+  printf '%s\n' "Search requests must disable Apache HttpClient redirects exactly once." >&2
+  exit 1
+fi
+
+redirect_line=$(grep -nF 'HttpClientParams.setRedirecting(httpParams, false);' "$NETWORK_REQUEST" | cut -d: -f1)
+client_line=$(grep -nF 'HttpClient httpclient = new DefaultHttpClient(httpParams);' "$NETWORK_REQUEST" | cut -d: -f1)
+execute_source_line=$(grep -nF 'String responseBody = httpclient.execute(httpget,' "$NETWORK_REQUEST" | cut -d: -f1)
+if [ -z "$redirect_line" ] || [ -z "$client_line" ] || [ -z "$execute_source_line" ] || \
+   [ "$redirect_line" -ge "$client_line" ] || [ "$client_line" -ge "$execute_source_line" ]; then
+  printf '%s\n' "Search redirects must be disabled before client construction and execution." >&2
+  exit 1
+fi
+
+if [ ! -f "$SEARCH_REDIRECT_PLAN" ] || \
+   ! grep -Fq "Status: Completed" "$SEARCH_REDIRECT_PLAN" || \
+   ! grep -Fq "make check" "$SEARCH_REDIRECT_PLAN" || \
+   ! grep -Fq "hostile mutations" "$SEARCH_REDIRECT_PLAN"; then
+  printf '%s\n' "Search redirect plan must record completed verification." >&2
   exit 1
 fi
 

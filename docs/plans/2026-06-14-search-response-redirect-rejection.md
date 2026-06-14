@@ -1,6 +1,6 @@
 # Search Response Redirect Rejection
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -45,4 +45,12 @@ truthful bounded verification.
 
 ## Verification
 
-- Pending implementation and bounded validation.
+- Root and external-directory `make check` passed the portable baseline,
+  response-body, and media-type tests; Android Gradle tasks truthfully skipped
+  where the legacy SDK/toolchain was unavailable.
+- Five hostile mutations removing the redirect setting, enabling redirects,
+  reordering it after client construction, removing the import, and reopening
+  plan status were rejected by the baseline gate.
+- Final verification covered the exact diff, shell syntax, whitespace,
+  conflict markers, credential-shaped added lines, and generated artifacts.
+- Emulator, physical-device, and live search-service behavior were not tested.

@@ -89,6 +89,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Search result image downloads require HTTPS and bounded connection/read
   timeouts before decoding the bitmap.
 - Image downloads reject redirects and non-success responses before decoding.
+- Search JSON requests reject redirects before response validation.
 - Search HTTP clients shut down their connection managers after every request
   outcome so repeated queries do not retain socket pools.
 - Search JSON downloads enforce a 64 KiB response-body limit for declared and
