@@ -34,6 +34,7 @@ TRANSPORT_CANCELLATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-active-trans
 IMAGE_URL_AUTHORITY_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-url-authority.md"
 IMAGE_DEFAULT_PORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-default-port.md"
 IMAGE_LOOPBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-loopback-boundary.md"
+IMAGE_PRIVATE_LITERAL_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-private-literal-boundary.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -830,6 +831,55 @@ done
 for image_loopback_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   if ! grep -Fq "Backend-provided image URLs cannot explicitly target loopback hosts before connection setup." "$ROOT_DIR/$image_loopback_doc"; then
     printf '%s\n' "$image_loopback_doc must document image URL loopback validation." >&2
+    exit 1
+  fi
+done
+for image_private_contract in \
+  'isPrivateAddressLiteral(imageUrl.getHost())' \
+  '(address & 0xff000000L) == 0x0a000000L' \
+  '(address & 0xffff0000L) == 0xa9fe0000L' \
+  '(address & 0xfff00000L) == 0xac100000L' \
+  '(address & 0xffff0000L) == 0xc0a80000L' \
+  '(addressBytes[0] & 0xfe) == 0xfc' \
+  'address.isLinkLocalAddress()' \
+  'address.isAnyLocalAddress()'; do
+  if ! grep -Fq "$image_private_contract" "$IMAGE_URL_POLICY"; then
+    printf '%s\n' "Missing image private-literal contract: $image_private_contract" >&2
+    exit 1
+  fi
+done
+for image_private_fixture in \
+  'https://10.0.0.1/photo.png' \
+  'https://167772161/photo.png' \
+  'https://169.254.1.1/photo.png' \
+  'https://172.16.0.1/photo.png' \
+  'https://192.168.1.1/photo.png' \
+  'https://[::]/photo.png' \
+  'https://[fc00::1]/photo.png' \
+  'https://[fe80::1]/photo.png' \
+  'https://[::ffff:10.0.0.1]/photo.png' \
+  'https://8.8.8.8/photo.png' \
+  'https://172.15.255.255/photo.png' \
+  'https://172.32.0.0/photo.png' \
+  'https://[2001:4860:4860::8888]/photo.png'; do
+  if ! grep -Fq "$image_private_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image private-literal fixture is missing: $image_private_fixture" >&2
+    exit 1
+  fi
+done
+for image_private_plan_contract in \
+  "Status: Completed" \
+  "isPrivateAddressLiteral" \
+  "make check" \
+  "hostile mutations"; do
+  if ! grep -Fq "$image_private_plan_contract" "$IMAGE_PRIVATE_LITERAL_PLAN"; then
+    printf '%s\n' "Search image private-literal plan must record completed verification: $image_private_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_private_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup; DNS-style hosts are not resolved by this syntactic check." "$ROOT_DIR/$image_private_doc"; then
+    printf '%s\n' "$image_private_doc must document image URL private-literal validation." >&2
     exit 1
   fi
 done

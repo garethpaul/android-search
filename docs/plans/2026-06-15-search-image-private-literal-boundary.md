@@ -1,6 +1,6 @@
 # Search Image Private Literal Boundary
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -39,6 +39,27 @@ without requiring DNS resolution or rebinding.
   controls, maintained guidance, and plan completion.
 - Audit the exact diff, generated artifacts, conflicts, whitespace,
   dependency/workflow drift, and credential-shaped additions.
+
+## Completion Evidence
+
+- Added `isPrivateAddressLiteral` after the existing HTTPS authority, port,
+  and loopback checks without resolving DNS-style hosts.
+- The focused image URL policy suite passed with private, link-local,
+  unspecified, unique-local, mapped-address, legacy IPv4 numeric, public IP,
+  and DNS-style fixtures.
+- All three dependency-free Java host suites passed.
+- With Java 8 and `/home/gjones/android-sdk`, Gradle debug/release unit tests
+  passed, debug/release lint reported zero errors and warnings, and debug APK
+  assembly succeeded.
+- Fourteen isolated hostile mutations were rejected: nine runtime mutations
+  across complete guard removal, every IPv4 mask, IPv6
+  unique-local/link-local/unspecified handling, and public-address
+  over-rejection; plus five static mutations covering source ownership,
+  rejected and public fixtures, maintained guidance, and plan completion.
+- Repository-root and external-directory `make check` passed with Java 8 and
+  the configured Android SDK.
+- No emulator, physical device, backend, DNS, or live-network behavior was
+  exercised; hostname resolution and DNS rebinding remain out of scope.
 
 ## Risks
 

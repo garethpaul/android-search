@@ -27,6 +27,9 @@ final class ImageUrlPolicy {
         if (isLoopbackHost(imageUrl.getHost())) {
             throw new MalformedURLException("Search image URLs must not target loopback hosts");
         }
+        if (isPrivateAddressLiteral(imageUrl.getHost())) {
+            throw new MalformedURLException("Search image URLs must not target private address literals");
+        }
 
         return imageUrl;
     }
@@ -76,6 +79,54 @@ final class ImageUrlPolicy {
             return -1;
         }
         return (address << (8 * (5 - parts.length))) | lastPart;
+    }
+
+    private static boolean isPrivateAddressLiteral(String host) {
+        String normalizedHost = host.toLowerCase(Locale.US);
+        if (normalizedHost.endsWith(".")) {
+            normalizedHost = normalizedHost.substring(0, normalizedHost.length() - 1);
+        }
+
+        if (normalizedHost.startsWith("[")
+                && normalizedHost.endsWith("]")
+                && normalizedHost.indexOf(':') >= 0) {
+            String address = normalizedHost.substring(1, normalizedHost.length() - 1);
+            try {
+                return isPrivateAddress(InetAddress.getByName(address));
+            } catch (UnknownHostException ignored) {
+                return false;
+            }
+        }
+
+        long ipv4Address = parseIpv4Literal(normalizedHost);
+        return ipv4Address >= 0 && isPrivateIpv4Address(ipv4Address);
+    }
+
+    private static boolean isPrivateAddress(InetAddress address) {
+        if (address.isAnyLocalAddress()
+                || address.isLinkLocalAddress()
+                || address.isSiteLocalAddress()) {
+            return true;
+        }
+
+        byte[] addressBytes = address.getAddress();
+        if (addressBytes.length == 4) {
+            long ipv4Address = 0;
+            for (byte addressByte : addressBytes) {
+                ipv4Address = (ipv4Address << 8) | (addressByte & 0xff);
+            }
+            return isPrivateIpv4Address(ipv4Address);
+        }
+
+        return addressBytes.length == 16 && (addressBytes[0] & 0xfe) == 0xfc;
+    }
+
+    private static boolean isPrivateIpv4Address(long address) {
+        return (address & 0xff000000L) == 0x00000000L
+                || (address & 0xff000000L) == 0x0a000000L
+                || (address & 0xffff0000L) == 0xa9fe0000L
+                || (address & 0xfff00000L) == 0xac100000L
+                || (address & 0xffff0000L) == 0xc0a80000L;
     }
 
     private static long parseIpv4Part(String value, long maximum) {

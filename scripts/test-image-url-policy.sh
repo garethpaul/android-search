@@ -24,6 +24,15 @@ public final class ImageUrlPolicyTest {
         expectAccepted("https://images.localhost.example/photo.png");
         expectAccepted("https://128.1/photo.png");
         expectAccepted("https://2147483649/photo.png");
+        expectAccepted("https://8.8.8.8/photo.png");
+        expectAccepted("https://9.255.255.255/photo.png");
+        expectAccepted("https://11.0.0.1/photo.png");
+        expectAccepted("https://169.253.255.255/photo.png");
+        expectAccepted("https://172.15.255.255/photo.png");
+        expectAccepted("https://172.32.0.0/photo.png");
+        expectAccepted("https://192.167.255.255/photo.png");
+        expectAccepted("https://192.169.0.0/photo.png");
+        expectAccepted("https://[2001:4860:4860::8888]/photo.png");
 
         expectRejected("http://images.example.test/photo.png");
         expectRejected("https:/photo.png");
@@ -48,6 +57,20 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://[0:0:0:0:0:0:0:1]/photo.png");
         expectRejected("https://[::ffff:127.0.0.1]/photo.png");
         expectRejected("https://[0:0:0:0:0:ffff:7f00:1]/photo.png");
+        expectRejected("https://0.0.0.0/photo.png");
+        expectRejected("https://10.0.0.1/photo.png");
+        expectRejected("https://167772161/photo.png");
+        expectRejected("https://012.0.0.1/photo.png");
+        expectRejected("https://0x0a000001/photo.png");
+        expectRejected("https://169.254.1.1/photo.png");
+        expectRejected("https://172.16.0.1/photo.png");
+        expectRejected("https://172.31.255.255/photo.png");
+        expectRejected("https://192.168.1.1/photo.png");
+        expectRejected("https://[::]/photo.png");
+        expectRejected("https://[fc00::1]/photo.png");
+        expectRejected("https://[fdff:ffff::1]/photo.png");
+        expectRejected("https://[fe80::1]/photo.png");
+        expectRejected("https://[::ffff:10.0.0.1]/photo.png");
 
         System.out.println("Image URL policy tests passed.");
     }
