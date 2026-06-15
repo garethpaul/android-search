@@ -32,6 +32,7 @@ QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-verification-checklist.md"
 TRANSPORT_CANCELLATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-active-transport-cancellation.md"
 IMAGE_URL_AUTHORITY_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-url-authority.md"
+IMAGE_DEFAULT_PORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-default-port.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -750,12 +751,21 @@ for image_url_contract in \
   'static URL requireHttpsAuthority(String value) throws MalformedURLException' \
   '!"https".equalsIgnoreCase(imageUrl.getProtocol())' \
   'imageUrl.getHost() == null || imageUrl.getHost().length() == 0' \
-  'imageUrl.getUserInfo() != null'; do
+  'imageUrl.getUserInfo() != null' \
+  'imageUrl.getPort() != -1 && imageUrl.getPort() != 443'; do
   if ! grep -Fq "$image_url_contract" "$IMAGE_URL_POLICY"; then
     printf '%s\n' "Missing image URL authority contract: $image_url_contract" >&2
     exit 1
   fi
 done
+if ! grep -Fq 'HTTPS://images.example.test:443/photo.png#preview' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://images.example.test:1/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://images.example.test:80/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://images.example.test:444/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://images.example.test:8443/photo.png' "$IMAGE_URL_POLICY_TEST"; then
+  printf '%s\n' "Search image URL policy port tests are incomplete." >&2
+  exit 1
+fi
 if [ ! -x "$IMAGE_URL_POLICY_TEST" ] || \
    ! grep -Fq 'https:/photo.png' "$IMAGE_URL_POLICY_TEST" || \
    ! grep -Fq 'https://user@example.test/photo.png' "$IMAGE_URL_POLICY_TEST" || \
@@ -767,6 +777,18 @@ fi
 for image_url_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
   if ! grep -Fq "$image_url_plan_contract" "$IMAGE_URL_AUTHORITY_PLAN"; then
     printf '%s\n' "Search image URL authority plan must record completed verification: $image_url_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_port_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
+  if ! grep -Fq "$image_port_plan_contract" "$IMAGE_DEFAULT_PORT_PLAN"; then
+    printf '%s\n' "Search image default-port plan must record completed verification: $image_port_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_port_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs use only the default HTTPS port before connection setup." "$ROOT_DIR/$image_port_doc"; then
+    printf '%s\n' "$image_port_doc must document image URL default-port validation." >&2
     exit 1
   fi
 done

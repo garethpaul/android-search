@@ -18,13 +18,17 @@ import java.net.URL;
 public final class ImageUrlPolicyTest {
     public static void main(String[] args) throws Exception {
         expectAccepted("https://images.example.test/photo.png");
-        expectAccepted("HTTPS://images.example.test:8443/photo.png#preview");
+        expectAccepted("HTTPS://images.example.test:443/photo.png#preview");
         expectAccepted("https://images.example.test/photo.png?token=a%2Bb&expires=1");
 
         expectRejected("http://images.example.test/photo.png");
         expectRejected("https:/photo.png");
         expectRejected("https://user@example.test/photo.png");
         expectRejected("https://user:password@example.test/photo.png");
+        expectRejected("https://images.example.test:1/photo.png");
+        expectRejected("https://images.example.test:80/photo.png");
+        expectRejected("https://images.example.test:444/photo.png");
+        expectRejected("https://images.example.test:8443/photo.png");
 
         System.out.println("Image URL policy tests passed.");
     }

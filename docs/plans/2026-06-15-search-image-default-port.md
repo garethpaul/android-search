@@ -1,6 +1,6 @@
 # Search Image Default HTTPS Port
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -62,12 +62,17 @@ connection setup.
 - Do not claim emulator, device, backend, or live-network execution.
 - Keep this work stacked on the image URL authority pull request.
 
-## Verification To Complete
+## Completed Verification
 
-- Run the focused image URL policy suite and all portable host suites.
-- Run repository and external-directory `make check` with bounded commands.
-- Reject isolated mutations for omitted-port acceptance, explicit 443
-  acceptance, non-default rejection, fixtures, guidance, and plan completion.
-- Run exact diff, generated-artifact, likely-secret, and whitespace audits.
-- Take one bounded exact-head hosted snapshot after push without polling.
-
+- The focused image URL policy suite and all portable Java host suites passed.
+- Debug and release Gradle unit tasks passed, Android lint reported zero issues
+  for both variants, and debug APK assembly succeeded with the installed SDK.
+- Repository and external-directory `make check` passed with explicit SDK
+  environment variables and bounded commands.
+- Eight isolated hostile mutations were rejected for omitted-port acceptance,
+  explicit 443 acceptance, non-default rejection, implementation, fixtures,
+  guidance, and plan completion.
+- Exact diff, generated-artifact, likely-secret, and whitespace audits passed
+  after removing only explicit reproducible Gradle output.
+- Hosted evidence is recorded separately from one bounded exact-head snapshot
+  after push; no emulator, device, backend, or live-network behavior is claimed.

@@ -49,6 +49,7 @@ Helpful reports include:
   without exception messages, stacks, query-bearing URLs, or response details.
 - Image downloads reject redirects and non-success responses before decoding.
 - Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
+- Backend-provided image URLs use only the default HTTPS port before connection setup.
 - Search JSON requests reject redirects before response validation.
 - Search JSON responses require successful 2xx status before entity access.
 - Unexpected runtime exceptions become generic search failures while fatal JVM

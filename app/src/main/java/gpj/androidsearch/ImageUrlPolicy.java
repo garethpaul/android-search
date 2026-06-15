@@ -18,6 +18,9 @@ final class ImageUrlPolicy {
         if (imageUrl.getUserInfo() != null) {
             throw new MalformedURLException("Search image URLs must not include user info");
         }
+        if (imageUrl.getPort() != -1 && imageUrl.getPort() != 443) {
+            throw new MalformedURLException("Search image URLs must use the default HTTPS port");
+        }
 
         return imageUrl;
     }
