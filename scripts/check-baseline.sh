@@ -33,6 +33,7 @@ DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-
 TRANSPORT_CANCELLATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-active-transport-cancellation.md"
 IMAGE_URL_AUTHORITY_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-url-authority.md"
 IMAGE_DEFAULT_PORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-default-port.md"
+IMAGE_LOOPBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-loopback-boundary.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -752,7 +753,12 @@ for image_url_contract in \
   '!"https".equalsIgnoreCase(imageUrl.getProtocol())' \
   'imageUrl.getHost() == null || imageUrl.getHost().length() == 0' \
   'imageUrl.getUserInfo() != null' \
-  'imageUrl.getPort() != -1 && imageUrl.getPort() != 443'; do
+  'imageUrl.getPort() != -1 && imageUrl.getPort() != 443' \
+  'isLoopbackHost(imageUrl.getHost())' \
+  'normalizedHost.endsWith(".localhost")' \
+  'InetAddress.getByName(address).isLoopbackAddress()' \
+  'parseIpv4Literal(normalizedHost)' \
+  '(ipv4Address & 0xff000000L) == 0x7f000000L'; do
   if ! grep -Fq "$image_url_contract" "$IMAGE_URL_POLICY"; then
     printf '%s\n' "Missing image URL authority contract: $image_url_contract" >&2
     exit 1
@@ -766,6 +772,31 @@ if ! grep -Fq 'HTTPS://images.example.test:443/photo.png#preview' "$IMAGE_URL_PO
   printf '%s\n' "Search image URL policy port tests are incomplete." >&2
   exit 1
 fi
+for loopback_fixture in \
+  'https://localhost/photo.png' \
+  'https://LOCALHOST./photo.png' \
+  'https://images.localhost/photo.png' \
+  'https://127.0.0.1/photo.png' \
+  'https://127.255.255.254/photo.png' \
+  'https://127.1/photo.png' \
+  'https://2130706433/photo.png' \
+  'https://0177.0.0.1/photo.png' \
+  'https://0x7f.0.0.1/photo.png' \
+  'https://017700000001/photo.png' \
+  'https://0x7f000001/photo.png' \
+  'https://[::1]/photo.png' \
+  'https://[0:0:0:0:0:0:0:1]/photo.png' \
+  'https://[::ffff:127.0.0.1]/photo.png' \
+  'https://[0:0:0:0:0:ffff:7f00:1]/photo.png' \
+  'https://127.example.test/photo.png' \
+  'https://images.localhost.example/photo.png' \
+  'https://128.1/photo.png' \
+  'https://2147483649/photo.png'; do
+  if ! grep -Fq "$loopback_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image URL loopback fixture is missing: $loopback_fixture" >&2
+    exit 1
+  fi
+done
 if [ ! -x "$IMAGE_URL_POLICY_TEST" ] || \
    ! grep -Fq 'https:/photo.png' "$IMAGE_URL_POLICY_TEST" || \
    ! grep -Fq 'https://user@example.test/photo.png' "$IMAGE_URL_POLICY_TEST" || \
@@ -783,6 +814,22 @@ done
 for image_port_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
   if ! grep -Fq "$image_port_plan_contract" "$IMAGE_DEFAULT_PORT_PLAN"; then
     printf '%s\n' "Search image default-port plan must record completed verification: $image_port_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_loopback_plan_contract in \
+  "Status: Completed" \
+  "isLoopbackHost" \
+  "make check" \
+  "hostile mutations"; do
+  if ! grep -Fq "$image_loopback_plan_contract" "$IMAGE_LOOPBACK_PLAN"; then
+    printf '%s\n' "Search image loopback plan must record completed verification: $image_loopback_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_loopback_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs cannot explicitly target loopback hosts before connection setup." "$ROOT_DIR/$image_loopback_doc"; then
+    printf '%s\n' "$image_loopback_doc must document image URL loopback validation." >&2
     exit 1
   fi
 done

@@ -4,6 +4,7 @@
 
 - Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
 - Backend-provided image URLs use only the default HTTPS port before connection setup.
+- Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
 
 ## 2026-06-14
 

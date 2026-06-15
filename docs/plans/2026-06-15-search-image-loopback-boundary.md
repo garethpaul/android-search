@@ -1,6 +1,6 @@
 # Search Image Loopback Boundary
 
-Status: In Progress
+Status: Completed
 
 ## Problem
 
@@ -32,8 +32,9 @@ This plan implements only P0.
 - Continue requiring HTTPS, a non-empty host, no user-info credentials, and an
   omitted or explicit port 443.
 - Reject `localhost` case-insensitively and names beneath `.localhost`.
-- Reject dotted-decimal IPv4 literals whose first octet is `127`.
-- Reject the bracketed IPv6 loopback literal `::1` case-insensitively.
+- Reject explicit IPv4 loopback literals across one-to-four-part decimal,
+  octal, and hexadecimal forms.
+- Reject bracketed IPv6 loopback and IPv4-mapped loopback literals.
 - Continue accepting normal DNS hosts, paths, signed query strings, fragments,
   and explicit port 443.
 - Preserve redirects, timeouts, media-type checks, body limits, bitmap limits,
@@ -81,15 +82,34 @@ hosts before connection setup.
 
 ## Completion Evidence
 
-Pending implementation and validation.
+- Added `isLoopbackHost`, local one-to-four-part IPv4 numeric parsing, and
+  bracketed IPv6 literal handling after the existing scheme, authority,
+  user-info, and port checks.
+- The focused image URL policy suite passed with exact/mixed-case localhost,
+  localhost subdomain, IPv4 `127/8`, compressed IPv6, and expanded IPv6
+  rejection fixtures while preserving non-loopback DNS-style hosts.
+- All three dependency-free Java host suites passed.
+- With Java 8 and the installed Android SDK, Gradle `testDebug` and
+  `testRelease` passed, debug/release lint reported zero issues, and debug APK
+  assembly succeeded.
+- Ten isolated hostile mutations were rejected for exact localhost, localhost
+  subdomains, IPv4 loopback masks, compact-address width, numeric radix,
+  IPv6 loopback, mapped-address fixtures, over-rejection controls, guidance,
+  and completed-plan status.
+- Repository-root and external-directory `make check` passed with explicit SDK
+  environment variables.
+- Exact-path diff, generated-artifact, conflict-marker, whitespace, dependency
+  drift, and credential-shaped-addition audits passed.
+- No emulator, physical device, backend, DNS, or live-network behavior was
+  exercised; DNS rebinding and private-network enforcement remain out of scope.
 
 ## Risks And Mitigations
 
 - **False private-network claim:** state explicitly that this syntactic boundary
-  does not resolve DNS or prevent rebinding.
-- **IPv4 parsing ambiguity:** reject only canonical dotted-decimal literals
-  with four numeric octets and first octet `127`; leave broader address
-  canonicalization to the connection-level follow-up.
+  does not resolve hostname DNS or prevent rebinding.
+- **Numeric address ambiguity:** parse legacy one-to-four-part IPv4 numeric
+  syntax locally and use `InetAddress` only for bracketed IPv6 literals, never
+  for DNS-style hosts.
 - **Compatibility:** preserve all currently accepted non-loopback fixtures and
   run the complete existing policy suite.
 - **Stacked delivery:** base the pull request on PR #19 and retain base-first
@@ -97,7 +117,7 @@ Pending implementation and validation.
 
 ## Out Of Scope
 
-- DNS resolution, DNS rebinding prevention, private-network allowlists,
+- Hostname DNS resolution, DNS rebinding prevention, private-network allowlists,
   certificate policy, proxy policy, or host pinning.
 - Changing the search endpoint, JSON schema, image decoding, UI, dependencies,
   Gradle, or SDK levels.

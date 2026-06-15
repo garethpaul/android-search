@@ -149,6 +149,7 @@ evidence, and explicit unexecuted rows.
   exception messages, stack traces, query-bearing URLs, or response details.
 - Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
 - Backend-provided image URLs use only the default HTTPS port before connection setup.
+- Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
 - The final request fallback handles runtime exceptions while fatal JVM errors
   propagate to the Android platform.
 - Search intent handling guards null intents and missing result views while
