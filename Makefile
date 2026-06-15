@@ -16,6 +16,7 @@ lint:
 
 test:
 	$(ROOT)scripts/test-bounded-response-body.sh
+	$(ROOT)scripts/test-image-url-policy.sh
 	$(ROOT)scripts/test-response-media-type.sh
 	@if [ -n "$(ANDROID_SDK)" ] && [ -d "$(ANDROID_SDK)" ]; then \
 		cd $(ROOT) && ANDROID_HOME="$(ANDROID_SDK)" ANDROID_SDK_ROOT="$(ANDROID_SDK)" $(GRADLE) test --no-daemon; \

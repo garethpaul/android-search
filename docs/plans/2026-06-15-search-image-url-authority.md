@@ -1,6 +1,6 @@
 # Search Image URL Authority Validation
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -56,15 +56,16 @@ Files:
 State that backend-provided image URLs require HTTPS, a host, and no user-info
 credentials before connection setup.
 
-## Verification Plan
+## Verification Completed
 
-- Run the image URL policy test before implementation and confirm the new
-  hostile fixtures fail.
-- Run `sh -n`, the focused host test, and `make check` from the repository and
-  an external directory with explicit timeouts.
-- Reject isolated mutations for scheme, host, user-info, integration, tests,
-  documentation, and completed-plan evidence.
-- Audit the exact diff, generated artifacts, credentials, and intended paths.
+- The scheme-only policy accepted `https:/photo.png`; the focused host test
+  failed before the authority guards were added and passed afterward.
+- `sh -n` and all three dependency-free Java host suites passed.
+- Repository and external-directory `make check` passed with the baseline and
+  all three dependency-free Java host suites. Android SDK-dependent lint,
+  tests, and assembly were truthfully skipped because the SDK is unavailable.
+- Seven isolated hostile mutations were rejected for scheme, host, user-info,
+  downloader integration, fixture, guidance, and completed-plan weakening.
 
 ## Scope Boundaries
 

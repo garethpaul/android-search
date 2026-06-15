@@ -34,6 +34,7 @@ Priority:
 - Reject malformed UTF-8 search JSON before parsing backend responses
 - Search JSON responses require successful 2xx status before entity access
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
 - Image downloads reject redirects and non-success responses before decoding.
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is

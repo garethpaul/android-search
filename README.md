@@ -147,6 +147,7 @@ evidence, and explicit unexecuted rows.
   bodies.
 - Network and image exceptions use generic search failure logs without
   exception messages, stack traces, query-bearing URLs, or response details.
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
 - The final request fallback handles runtime exceptions while fatal JVM errors
   propagate to the Android platform.
 - Search intent handling guards null intents and missing result views while

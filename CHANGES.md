@@ -1,5 +1,9 @@
 # Changes
 
+## 2026-06-15
+
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
+
 ## 2026-06-14
 
 - Search JSON responses require successful 2xx status before entity access.

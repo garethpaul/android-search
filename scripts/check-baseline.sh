@@ -4,6 +4,7 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 NETWORK_REQUEST="$ROOT_DIR/app/src/main/java/gpj/androidsearch/NetworkRequest.java"
 MAIN_ACTIVITY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/MainActivity.java"
+IMAGE_URL_POLICY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ImageUrlPolicy.java"
 APP_BUILD="$ROOT_DIR/app/build.gradle"
 ROOT_BUILD="$ROOT_DIR/build.gradle"
 MANIFEST="$ROOT_DIR/app/src/main/AndroidManifest.xml"
@@ -30,10 +31,12 @@ STRICT_UTF8_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-strict-utf8-decoding.md
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-query-length.md"
 DEVICE_VERIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-android-search-device-verification-checklist.md"
 TRANSPORT_CANCELLATION_PLAN="$ROOT_DIR/docs/plans/2026-06-14-search-active-transport-cancellation.md"
+IMAGE_URL_AUTHORITY_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-url-authority.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
 MEDIA_TYPE_TEST="$ROOT_DIR/scripts/test-response-media-type.sh"
+IMAGE_URL_POLICY_TEST="$ROOT_DIR/scripts/test-image-url-policy.sh"
 HOSTED_ANDROID_PLAN="$ROOT_DIR/docs/plans/2026-06-12-hosted-android-verification.md"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 RES_DIR="$ROOT_DIR/app/src/main/res"
@@ -726,8 +729,7 @@ fi
 
 for pattern in \
   "private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000" \
-  "private static URL httpsImageUrl(String value) throws MalformedURLException" \
-  "equalsIgnoreCase(imageUrl.getProtocol())" \
+  "ImageUrlPolicy.requireHttpsAuthority(urls[0].trim())" \
   "HttpsURLConnection connection = null;" \
   "connection = (HttpsURLConnection) imageUrl.openConnection();" \
   "connection.setInstanceFollowRedirects(false);" \
@@ -740,6 +742,37 @@ for pattern in \
   "Log.e(LOG_TAG, \"Unable to download search image\");"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing image download guard: $pattern" >&2
+    exit 1
+  fi
+done
+
+for image_url_contract in \
+  'static URL requireHttpsAuthority(String value) throws MalformedURLException' \
+  '!"https".equalsIgnoreCase(imageUrl.getProtocol())' \
+  'imageUrl.getHost() == null || imageUrl.getHost().length() == 0' \
+  'imageUrl.getUserInfo() != null'; do
+  if ! grep -Fq "$image_url_contract" "$IMAGE_URL_POLICY"; then
+    printf '%s\n' "Missing image URL authority contract: $image_url_contract" >&2
+    exit 1
+  fi
+done
+if [ ! -x "$IMAGE_URL_POLICY_TEST" ] || \
+   ! grep -Fq 'https:/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://user@example.test/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'https://user:password@example.test/photo.png' "$IMAGE_URL_POLICY_TEST" || \
+   ! grep -Fq 'token=a%2Bb&expires=1' "$IMAGE_URL_POLICY_TEST"; then
+  printf '%s\n' "Search image URL policy host tests are incomplete." >&2
+  exit 1
+fi
+for image_url_plan_contract in "Status: Completed" "make check" "hostile mutations"; do
+  if ! grep -Fq "$image_url_plan_contract" "$IMAGE_URL_AUTHORITY_PLAN"; then
+    printf '%s\n' "Search image URL authority plan must record completed verification: $image_url_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_url_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup." "$ROOT_DIR/$image_url_doc"; then
+    printf '%s\n' "$image_url_doc must document image URL authority validation." >&2
     exit 1
   fi
 done

@@ -23,7 +23,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -220,7 +219,7 @@ public class MainActivity extends Activity {
             InputStream in = null;
             HttpsURLConnection connection = null;
             try {
-                URL imageUrl = httpsImageUrl(urls[0].trim());
+                URL imageUrl = ImageUrlPolicy.requireHttpsAuthority(urls[0].trim());
                 connection = (HttpsURLConnection) imageUrl.openConnection();
                 connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
@@ -298,15 +297,6 @@ public class MainActivity extends Activity {
         }
 
         return BitmapFactory.decodeByteArray(imageBody, 0, imageBody.length);
-    }
-
-    private static URL httpsImageUrl(String value) throws MalformedURLException {
-        URL imageUrl = new URL(value);
-        if (!"https".equalsIgnoreCase(imageUrl.getProtocol())) {
-            throw new MalformedURLException("Search image URLs must use HTTPS");
-        }
-
-        return imageUrl;
     }
 
     @Override
