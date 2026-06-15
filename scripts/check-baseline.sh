@@ -35,6 +35,7 @@ IMAGE_URL_AUTHORITY_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-url-autho
 IMAGE_DEFAULT_PORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-default-port.md"
 IMAGE_LOOPBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-loopback-boundary.md"
 IMAGE_PRIVATE_LITERAL_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-private-literal-boundary.md"
+IMAGE_SHARED_ADDRESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-shared-address-boundary.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -837,6 +838,7 @@ done
 for image_private_contract in \
   'isPrivateAddressLiteral(imageUrl.getHost())' \
   '(address & 0xff000000L) == 0x0a000000L' \
+  '(address & 0xffc00000L) == 0x64400000L' \
   '(address & 0xffff0000L) == 0xa9fe0000L' \
   '(address & 0xfff00000L) == 0xac100000L' \
   '(address & 0xffff0000L) == 0xc0a80000L' \
@@ -864,6 +866,36 @@ for image_private_fixture in \
   'https://[2001:4860:4860::8888]/photo.png'; do
   if ! grep -Fq "$image_private_fixture" "$IMAGE_URL_POLICY_TEST"; then
     printf '%s\n' "Search image private-literal fixture is missing: $image_private_fixture" >&2
+    exit 1
+  fi
+done
+for image_shared_fixture in \
+  'https://100.63.255.255/photo.png' \
+  'https://100.128.0.0/photo.png' \
+  'https://100.64.0.0/photo.png' \
+  'https://100.127.255.255/photo.png' \
+  'https://100.64.1/photo.png' \
+  'https://1681915905/photo.png' \
+  'https://0x64400001/photo.png' \
+  'https://014420000001/photo.png'; do
+  if ! grep -Fq "$image_shared_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image shared-address fixture is missing: $image_shared_fixture" >&2
+    exit 1
+  fi
+done
+for image_shared_plan_contract in \
+  "Status: Completed" \
+  "100.64.0.0/10" \
+  "make check" \
+  "mutations"; do
+  if ! grep -Fq "$image_shared_plan_contract" "$IMAGE_SHARED_ADDRESS_PLAN"; then
+    printf '%s\n' "Search image shared-address plan must record completed verification: $image_shared_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_shared_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup." "$ROOT_DIR/$image_shared_doc"; then
+    printf '%s\n' "$image_shared_doc must document image URL shared-address validation." >&2
     exit 1
   fi
 done

@@ -38,6 +38,7 @@ Priority:
 - Backend-provided image URLs use only the default HTTPS port before connection setup.
 - Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
 - Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup; DNS-style hosts are not resolved by this syntactic check.
+- Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
 - Image downloads reject redirects and non-success responses before decoding.
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is

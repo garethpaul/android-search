@@ -1,6 +1,6 @@
 # Search Image Shared Address Boundary
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -78,3 +78,18 @@ enforcement.
 - Other special-purpose IP ranges, networking-client migration, endpoint or
   schema changes, Gradle modernization, and dependency upgrades.
 - Emulator, physical-device, backend, DNS, and live-network execution.
+
+## Completion Evidence
+
+- A pre-implementation hostile fixture proved `100.64.0.1` was accepted; the
+  focused policy suite passed after the exact shared-address mask was added.
+- Repository-root and external-directory `make check` passed with Java 8 and
+  the configured Android SDK, including host suites, debug/release unit tests,
+  zero-issue lint, and debug assembly.
+- Eight isolated mutations were rejected across the range mask, lower and
+  upper boundaries, public controls, legacy numeric forms, maintained
+  guidance, and completed-plan evidence.
+- Exact-path diff, generated-artifact, conflict-marker, dependency/workflow
+  drift, whitespace, and credential-shaped-addition audits passed.
+- No emulator, physical device, backend, DNS, or live-network behavior was
+  exercised; DNS-style hosts remain unresolved by this syntactic policy.

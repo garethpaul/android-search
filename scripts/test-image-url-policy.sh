@@ -27,6 +27,8 @@ public final class ImageUrlPolicyTest {
         expectAccepted("https://8.8.8.8/photo.png");
         expectAccepted("https://9.255.255.255/photo.png");
         expectAccepted("https://11.0.0.1/photo.png");
+        expectAccepted("https://100.63.255.255/photo.png");
+        expectAccepted("https://100.128.0.0/photo.png");
         expectAccepted("https://169.253.255.255/photo.png");
         expectAccepted("https://172.15.255.255/photo.png");
         expectAccepted("https://172.32.0.0/photo.png");
@@ -62,6 +64,12 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://167772161/photo.png");
         expectRejected("https://012.0.0.1/photo.png");
         expectRejected("https://0x0a000001/photo.png");
+        expectRejected("https://100.64.0.0/photo.png");
+        expectRejected("https://100.127.255.255/photo.png");
+        expectRejected("https://100.64.1/photo.png");
+        expectRejected("https://1681915905/photo.png");
+        expectRejected("https://0x64400001/photo.png");
+        expectRejected("https://014420000001/photo.png");
         expectRejected("https://169.254.1.1/photo.png");
         expectRejected("https://172.16.0.1/photo.png");
         expectRejected("https://172.31.255.255/photo.png");

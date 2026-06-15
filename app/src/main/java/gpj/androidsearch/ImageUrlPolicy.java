@@ -124,6 +124,7 @@ final class ImageUrlPolicy {
     private static boolean isPrivateIpv4Address(long address) {
         return (address & 0xff000000L) == 0x00000000L
                 || (address & 0xff000000L) == 0x0a000000L
+                || (address & 0xffc00000L) == 0x64400000L
                 || (address & 0xffff0000L) == 0xa9fe0000L
                 || (address & 0xfff00000L) == 0xac100000L
                 || (address & 0xffff0000L) == 0xc0a80000L;
