@@ -8,12 +8,20 @@ trap 'rm -rf "$TMP_DIR"' EXIT HUP INT TERM
 mkdir -p "$TMP_DIR/classes" "$TMP_DIR/gpj/androidsearch"
 cp "$ROOT_DIR/app/src/main/java/gpj/androidsearch/ImageUrlPolicy.java" \
   "$TMP_DIR/gpj/androidsearch/ImageUrlPolicy.java"
+cp "$ROOT_DIR/app/src/main/java/gpj/androidsearch/AddressPinningSSLSocketFactory.java" \
+  "$TMP_DIR/gpj/androidsearch/AddressPinningSSLSocketFactory.java"
 
 cat > "$TMP_DIR/gpj/androidsearch/ImageUrlPolicyTest.java" <<'EOF'
 package gpj.androidsearch;
 
+import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.net.URL;
+
+import javax.net.ssl.SSLSocketFactory;
 
 public final class ImageUrlPolicyTest {
     public static void main(String[] args) throws Exception {
@@ -80,7 +88,146 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://[fe80::1]/photo.png");
         expectRejected("https://[::ffff:10.0.0.1]/photo.png");
 
+        testResolvedAddressPolicy();
+        testConnectedPeerPolicy();
+
         System.out.println("Image URL policy tests passed.");
+    }
+
+    private static void testResolvedAddressPolicy() throws Exception {
+        InetAddress publicV4 = address(8, 8, 8, 8);
+        InetAddress publicV6 = InetAddress.getByAddress(new byte[] {
+                0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0,
+                0, 0, 0, 0, 0, 0, (byte) 0x88, (byte) 0x88
+        });
+        InetAddress[] resolverAnswers = new InetAddress[] { publicV4, publicV6 };
+        InetAddress[] authorized = ImageUrlPolicy.requirePublicAddresses(
+                "images.example.test", new FixedResolver(resolverAnswers));
+        resolverAnswers[0] = address(10, 0, 0, 1);
+        if (!publicV4.equals(authorized[0]) || !publicV6.equals(authorized[1])) {
+            throw new AssertionError("resolved address result must be defensively copied");
+        }
+
+        expectResolutionRejected(new InetAddress[] { publicV4, address(10, 0, 0, 1) });
+        expectResolutionRejected(new InetAddress[] { address(127, 0, 0, 1) });
+        expectResolutionRejected(new InetAddress[] { address(0, 0, 0, 0) });
+        expectResolutionRejected(new InetAddress[] { address(169, 254, 1, 1) });
+        expectResolutionRejected(new InetAddress[] { address(192, 168, 1, 1) });
+        expectResolutionRejected(new InetAddress[] { address(100, 64, 0, 1) });
+        expectResolutionRejected(new InetAddress[] { address(224, 0, 0, 1) });
+        expectResolutionRejected(new InetAddress[] {
+                InetAddress.getByAddress(new byte[] {
+                        (byte) 0xfc, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 0, 0, 1
+                })
+        });
+        expectResolutionRejected(new InetAddress[] {
+                InetAddress.getByAddress(new byte[] {
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, (byte) 0xff, (byte) 0xff, 10, 0, 0, 1
+                })
+        });
+        expectResolutionRejected(new InetAddress[0]);
+        try {
+            ImageUrlPolicy.requirePublicAddresses(
+                    "images.example.test", new FailingResolver());
+            throw new AssertionError("resolution failure must be rejected");
+        } catch (UnknownHostException expected) {
+            // Expected fail-closed resolution.
+        }
+    }
+
+    private static void testConnectedPeerPolicy() throws Exception {
+        InetAddress authorizedPeer = address(8, 8, 8, 8);
+        InetAddress[] authorized = new InetAddress[] { authorizedPeer };
+        RecordingSSLSocketFactory delegate = new RecordingSSLSocketFactory();
+        AddressPinningSSLSocketFactory factory = new AddressPinningSSLSocketFactory(
+                delegate, "images.example.test", 443, authorized);
+        authorized[0] = address(9, 9, 9, 9);
+
+        FakeConnectedSocket accepted = new FakeConnectedSocket(authorizedPeer, 443);
+        Socket wrapped = factory.createSocket(accepted, "rebound.example.test", 8443, true);
+        if (wrapped != delegate.returnedSocket
+                || delegate.connectedSocket != accepted
+                || !"images.example.test".equals(delegate.hostname)
+                || delegate.port != 443
+                || !delegate.autoClose) {
+            throw new AssertionError("TLS delegation must preserve the original authority");
+        }
+
+        expectPeerRejected(factory, new FakeConnectedSocket(address(9, 9, 9, 9), 443));
+        expectPeerRejected(factory, new FakeConnectedSocket(address(10, 0, 0, 1), 443));
+        expectPeerRejected(factory, new FakeConnectedSocket(authorizedPeer, 8443));
+        expectPeerRejected(factory, new FakeConnectedSocket(null, 443));
+        expectAlternatePathsRejected(factory, authorizedPeer);
+    }
+
+    private static void expectResolutionRejected(InetAddress[] answers) throws Exception {
+        try {
+            ImageUrlPolicy.requirePublicAddresses(
+                    "images.example.test", new FixedResolver(answers));
+            throw new AssertionError("prohibited DNS answer must be rejected");
+        } catch (UnknownHostException expected) {
+            // Expected fail-closed resolution.
+        }
+    }
+
+    private static void expectPeerRejected(AddressPinningSSLSocketFactory factory,
+            FakeConnectedSocket socket) throws Exception {
+        try {
+            factory.createSocket(socket, "images.example.test", 443, true);
+            throw new AssertionError("unauthorized connected peer must be rejected");
+        } catch (IOException expected) {
+            if (!socket.wasClosed) {
+                throw new AssertionError("rejected connected peer must be closed");
+            }
+        }
+    }
+
+    private static void expectAlternatePathsRejected(
+            final AddressPinningSSLSocketFactory factory, final InetAddress address)
+            throws Exception {
+        expectIoFailure(new SocketCall() {
+            public void run() throws IOException {
+                factory.createSocket();
+            }
+        });
+        expectIoFailure(new SocketCall() {
+            public void run() throws IOException {
+                factory.createSocket("images.example.test", 443);
+            }
+        });
+        expectIoFailure(new SocketCall() {
+            public void run() throws IOException {
+                factory.createSocket("images.example.test", 443, address, 0);
+            }
+        });
+        expectIoFailure(new SocketCall() {
+            public void run() throws IOException {
+                factory.createSocket(address, 443);
+            }
+        });
+        expectIoFailure(new SocketCall() {
+            public void run() throws IOException {
+                factory.createSocket(address, 443, address, 0);
+            }
+        });
+    }
+
+    private static void expectIoFailure(SocketCall call) throws Exception {
+        try {
+            call.run();
+            throw new AssertionError("alternate TLS socket path must fail closed");
+        } catch (IOException expected) {
+            // Expected fail-closed path.
+        }
+    }
+
+    private static InetAddress address(int first, int second, int third, int fourth)
+            throws UnknownHostException {
+        return InetAddress.getByAddress(new byte[] {
+                (byte) first, (byte) second, (byte) third, (byte) fourth
+        });
     }
 
     private static void expectAccepted(String value) throws Exception {
@@ -99,11 +246,110 @@ public final class ImageUrlPolicyTest {
             // Expected boundary rejection.
         }
     }
+
+    private interface SocketCall {
+        void run() throws IOException;
+    }
+
+    private static final class FixedResolver implements ImageUrlPolicy.AddressResolver {
+        private final InetAddress[] answers;
+
+        FixedResolver(InetAddress[] answers) {
+            this.answers = answers;
+        }
+
+        public InetAddress[] resolve(String host) {
+            return answers;
+        }
+    }
+
+    private static final class FailingResolver implements ImageUrlPolicy.AddressResolver {
+        public InetAddress[] resolve(String host) throws UnknownHostException {
+            throw new UnknownHostException("fixture failure");
+        }
+    }
+
+    private static final class FakeConnectedSocket extends Socket {
+        private final InetAddress address;
+        private final int port;
+        private boolean wasClosed;
+
+        FakeConnectedSocket(InetAddress address, int port) {
+            this.address = address;
+            this.port = port;
+        }
+
+        @Override
+        public InetAddress getInetAddress() {
+            return address;
+        }
+
+        @Override
+        public int getPort() {
+            return port;
+        }
+
+        @Override
+        public synchronized void close() {
+            wasClosed = true;
+        }
+    }
+
+    private static final class RecordingSSLSocketFactory extends SSLSocketFactory {
+        private final Socket returnedSocket = new Socket();
+        private Socket connectedSocket;
+        private String hostname;
+        private int port;
+        private boolean autoClose;
+
+        @Override
+        public String[] getDefaultCipherSuites() {
+            return new String[] { "fixture" };
+        }
+
+        @Override
+        public String[] getSupportedCipherSuites() {
+            return new String[] { "fixture" };
+        }
+
+        @Override
+        public Socket createSocket(Socket socket, String host, int targetPort,
+                boolean close) {
+            connectedSocket = socket;
+            hostname = host;
+            port = targetPort;
+            autoClose = close;
+            return returnedSocket;
+        }
+
+        @Override
+        public Socket createSocket(String host, int targetPort) {
+            throw new AssertionError("unexpected delegate overload");
+        }
+
+        @Override
+        public Socket createSocket(String host, int targetPort, InetAddress localAddress,
+                int localPort) {
+            throw new AssertionError("unexpected delegate overload");
+        }
+
+        @Override
+        public Socket createSocket(InetAddress address, int targetPort) {
+            throw new AssertionError("unexpected delegate overload");
+        }
+
+        @Override
+        public Socket createSocket(InetAddress address, int targetPort,
+                InetAddress localAddress, int localPort) {
+            throw new AssertionError("unexpected delegate overload");
+        }
+    }
 }
 EOF
 
 javac -source 1.7 -target 1.7 -Xlint:all,-options -Werror \
   -d "$TMP_DIR/classes" \
   "$TMP_DIR/gpj/androidsearch/ImageUrlPolicy.java" \
+  "$TMP_DIR/gpj/androidsearch/AddressPinningSSLSocketFactory.java" \
   "$TMP_DIR/gpj/androidsearch/ImageUrlPolicyTest.java"
 java -cp "$TMP_DIR/classes" gpj.androidsearch.ImageUrlPolicyTest

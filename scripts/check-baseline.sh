@@ -5,6 +5,7 @@ ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 NETWORK_REQUEST="$ROOT_DIR/app/src/main/java/gpj/androidsearch/NetworkRequest.java"
 MAIN_ACTIVITY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/MainActivity.java"
 IMAGE_URL_POLICY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ImageUrlPolicy.java"
+ADDRESS_PINNING_FACTORY="$ROOT_DIR/app/src/main/java/gpj/androidsearch/AddressPinningSSLSocketFactory.java"
 APP_BUILD="$ROOT_DIR/app/build.gradle"
 ROOT_BUILD="$ROOT_DIR/build.gradle"
 MANIFEST="$ROOT_DIR/app/src/main/AndroidManifest.xml"
@@ -36,6 +37,7 @@ IMAGE_DEFAULT_PORT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-default-po
 IMAGE_LOOPBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-loopback-boundary.md"
 IMAGE_PRIVATE_LITERAL_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-private-literal-boundary.md"
 IMAGE_SHARED_ADDRESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-shared-address-boundary.md"
+IMAGE_DNS_PEER_PLAN="$ROOT_DIR/docs/plans/2026-06-16-search-image-dns-peer-binding.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -735,7 +737,7 @@ for pattern in \
   "private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000" \
   "ImageUrlPolicy.requireHttpsAuthority(urls[0].trim())" \
   "HttpsURLConnection connection = null;" \
-  "connection = (HttpsURLConnection) imageUrl.openConnection();" \
+  "connection = (HttpsURLConnection) imageUrl.openConnection(Proxy.NO_PROXY);" \
   "connection.setInstanceFollowRedirects(false);" \
   "connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
   "connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);" \
@@ -910,8 +912,95 @@ for image_private_plan_contract in \
   fi
 done
 for image_private_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
-  if ! grep -Fq "Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup; DNS-style hosts are not resolved by this syntactic check." "$ROOT_DIR/$image_private_doc"; then
+  if ! grep -Fq "Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup." "$ROOT_DIR/$image_private_doc"; then
     printf '%s\n' "$image_private_doc must document image URL private-literal validation." >&2
+    exit 1
+  fi
+done
+for image_dns_contract in \
+  'interface AddressResolver' \
+  'InetAddress.getAllByName(host)' \
+  'resolvedAddresses == null || resolvedAddresses.length == 0' \
+  'if (isProhibitedAddress(address))' \
+  'return authorizedAddresses.clone()' \
+  'address.isLoopbackAddress()' \
+  'address.isMulticastAddress()'; do
+  if ! grep -Fq "$image_dns_contract" "$IMAGE_URL_POLICY"; then
+    printf '%s\n' "Missing image DNS authorization contract: $image_dns_contract" >&2
+    exit 1
+  fi
+done
+for image_peer_contract in \
+  'extends SSLSocketFactory' \
+  'socket.getInetAddress()' \
+  'ImageUrlPolicy.isProhibitedAddress(peerAddress)' \
+  '!isAuthorized(peerAddress)' \
+  'socket.getPort() != port' \
+  'closeQuietly(socket);' \
+  'delegate.createSocket(socket, hostname, port, autoClose)'; do
+  if ! grep -Fq "$image_peer_contract" "$ADDRESS_PINNING_FACTORY"; then
+    printf '%s\n' "Missing image connected-peer contract: $image_peer_contract" >&2
+    exit 1
+  fi
+done
+if [ "$(grep -Fc 'throw unsupportedPath();' "$ADDRESS_PINNING_FACTORY" || true)" -ne 5 ]; then
+  printf '%s\n' "Search image TLS factory must fail closed on all alternate socket paths." >&2
+  exit 1
+fi
+for image_transport_contract in \
+  'ImageUrlPolicy.requirePublicAddresses(imageUrl.getHost())' \
+  'connection.setSSLSocketFactory(new AddressPinningSSLSocketFactory(' \
+  'connection.getSSLSocketFactory()' \
+  'imageUrl.getHost()' \
+  'authorizedAddresses));'; do
+  if ! grep -Fq "$image_transport_contract" "$MAIN_ACTIVITY"; then
+    printf '%s\n' "Missing image DNS peer transport integration: $image_transport_contract" >&2
+    exit 1
+  fi
+done
+image_resolve_line=$(grep -nF 'ImageUrlPolicy.requirePublicAddresses(imageUrl.getHost())' "$MAIN_ACTIVITY" | cut -d: -f1)
+image_open_line=$(grep -nF 'connection = (HttpsURLConnection) imageUrl.openConnection(Proxy.NO_PROXY);' "$MAIN_ACTIVITY" | cut -d: -f1)
+image_factory_line=$(grep -nF 'connection.setSSLSocketFactory(new AddressPinningSSLSocketFactory(' "$MAIN_ACTIVITY" | cut -d: -f1)
+image_response_line=$(grep -nF 'int responseCode = connection.getResponseCode();' "$MAIN_ACTIVITY" | cut -d: -f1)
+if [ -z "$image_resolve_line" ] || [ -z "$image_open_line" ] || \
+   [ -z "$image_factory_line" ] || [ -z "$image_response_line" ] || \
+   [ "$image_resolve_line" -ge "$image_open_line" ] || \
+   [ "$image_open_line" -ge "$image_factory_line" ] || \
+   [ "$image_factory_line" -ge "$image_response_line" ]; then
+  printf '%s\n' "Search image DNS authorization and peer binding must precede response access." >&2
+  exit 1
+fi
+if grep -RqE 'HostnameVerifier|TrustManager|setHostnameVerifier' \
+    "$ADDRESS_PINNING_FACTORY" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search image peer binding must preserve platform TLS verification." >&2
+  exit 1
+fi
+for image_dns_fixture in \
+  'new FixedResolver(resolverAnswers)' \
+  'new FailingResolver()' \
+  'expectPeerRejected' \
+  'expectAlternatePathsRejected' \
+  'rejected connected peer must be closed' \
+  'TLS delegation must preserve the original authority'; do
+  if ! grep -Fq "$image_dns_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image DNS peer fixture is missing: $image_dns_fixture" >&2
+    exit 1
+  fi
+done
+for image_dns_plan_contract in \
+  'Status: Completed' \
+  'requirePublicAddresses' \
+  'AddressPinningSSLSocketFactory' \
+  'make check' \
+  'mutations'; do
+  if ! grep -Fq "$image_dns_plan_contract" "$IMAGE_DNS_PEER_PLAN"; then
+    printf '%s\n' "Search image DNS peer plan must record completed verification: $image_dns_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_dns_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent." "$ROOT_DIR/$image_dns_doc"; then
+    printf '%s\n' "$image_dns_doc must document image DNS peer binding." >&2
     exit 1
   fi
 done
@@ -930,7 +1019,7 @@ done
 
 MAIN_ACTIVITY_COMPACT=$(tr -d '[:space:]' < "$MAIN_ACTIVITY")
 if ! printf '%s\n' "$MAIN_ACTIVITY_COMPACT" | grep -Fq \
-    'connection=(HttpsURLConnection)imageUrl.openConnection();connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);activeConnection=connection;if(isCancelled()){connection.disconnect();returnnull;}intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
+    'InetAddress[]authorizedAddresses=ImageUrlPolicy.requirePublicAddresses(imageUrl.getHost());connection=(HttpsURLConnection)imageUrl.openConnection(Proxy.NO_PROXY);intimagePort=imageUrl.getPort()==-1?imageUrl.getDefaultPort():imageUrl.getPort();connection.setSSLSocketFactory(newAddressPinningSSLSocketFactory(connection.getSSLSocketFactory(),imageUrl.getHost(),imagePort,authorizedAddresses));connection.setInstanceFollowRedirects(false);connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);activeConnection=connection;if(isCancelled()){connection.disconnect();returnnull;}intresponseCode=connection.getResponseCode();if(responseCode<200||responseCode>=300){thrownewIOException("Searchimagerequestfailed");}if(!ResponseMediaType.isImage(connection.getContentType())){thrownewIOException("Searchimagemediatypeisinvalid");}in=connection.getInputStream();'; then
   printf '%s\n' "Search image redirects and non-success responses must be rejected before reading bytes." >&2
   exit 1
 fi

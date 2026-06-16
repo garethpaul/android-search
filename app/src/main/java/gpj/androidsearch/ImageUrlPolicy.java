@@ -7,6 +7,17 @@ import java.net.URL;
 import java.util.Locale;
 
 final class ImageUrlPolicy {
+    interface AddressResolver {
+        InetAddress[] resolve(String host) throws UnknownHostException;
+    }
+
+    private static final AddressResolver SYSTEM_ADDRESS_RESOLVER = new AddressResolver() {
+        @Override
+        public InetAddress[] resolve(String host) throws UnknownHostException {
+            return InetAddress.getAllByName(host);
+        }
+    };
+
     private ImageUrlPolicy() {
     }
 
@@ -32,6 +43,26 @@ final class ImageUrlPolicy {
         }
 
         return imageUrl;
+    }
+
+    static InetAddress[] requirePublicAddresses(String host) throws UnknownHostException {
+        return requirePublicAddresses(host, SYSTEM_ADDRESS_RESOLVER);
+    }
+
+    static InetAddress[] requirePublicAddresses(String host, AddressResolver resolver)
+            throws UnknownHostException {
+        InetAddress[] resolvedAddresses = resolver.resolve(host);
+        if (resolvedAddresses == null || resolvedAddresses.length == 0) {
+            throw new UnknownHostException("Search image host resolved without addresses");
+        }
+
+        InetAddress[] authorizedAddresses = resolvedAddresses.clone();
+        for (InetAddress address : authorizedAddresses) {
+            if (isProhibitedAddress(address)) {
+                throw new UnknownHostException("Search image host resolved to a prohibited address");
+            }
+        }
+        return authorizedAddresses.clone();
     }
 
     private static boolean isLoopbackHost(String host) {
@@ -92,7 +123,7 @@ final class ImageUrlPolicy {
                 && normalizedHost.indexOf(':') >= 0) {
             String address = normalizedHost.substring(1, normalizedHost.length() - 1);
             try {
-                return isPrivateAddress(InetAddress.getByName(address));
+                return isProhibitedAddress(InetAddress.getByName(address));
             } catch (UnknownHostException ignored) {
                 return false;
             }
@@ -102,23 +133,42 @@ final class ImageUrlPolicy {
         return ipv4Address >= 0 && isPrivateIpv4Address(ipv4Address);
     }
 
-    private static boolean isPrivateAddress(InetAddress address) {
-        if (address.isAnyLocalAddress()
+    static boolean isProhibitedAddress(InetAddress address) {
+        if (address == null
+                || address.isAnyLocalAddress()
+                || address.isLoopbackAddress()
                 || address.isLinkLocalAddress()
-                || address.isSiteLocalAddress()) {
+                || address.isSiteLocalAddress()
+                || address.isMulticastAddress()) {
             return true;
         }
 
         byte[] addressBytes = address.getAddress();
         if (addressBytes.length == 4) {
-            long ipv4Address = 0;
-            for (byte addressByte : addressBytes) {
-                ipv4Address = (ipv4Address << 8) | (addressByte & 0xff);
-            }
-            return isPrivateIpv4Address(ipv4Address);
+            return isPrivateIpv4Address(ipv4Address(addressBytes, 0));
+        }
+        if (addressBytes.length == 16 && isIpv4MappedAddress(addressBytes)) {
+            return isPrivateIpv4Address(ipv4Address(addressBytes, 12));
         }
 
         return addressBytes.length == 16 && (addressBytes[0] & 0xfe) == 0xfc;
+    }
+
+    private static boolean isIpv4MappedAddress(byte[] addressBytes) {
+        for (int index = 0; index < 10; index++) {
+            if (addressBytes[index] != 0) {
+                return false;
+            }
+        }
+        return addressBytes[10] == (byte) 0xff && addressBytes[11] == (byte) 0xff;
+    }
+
+    private static long ipv4Address(byte[] addressBytes, int offset) {
+        long ipv4Address = 0;
+        for (int index = offset; index < offset + 4; index++) {
+            ipv4Address = (ipv4Address << 8) | (addressBytes[index] & 0xff);
+        }
+        return ipv4Address;
     }
 
     private static boolean isPrivateIpv4Address(long address) {

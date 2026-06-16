@@ -23,6 +23,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.Proxy;
 import java.net.URL;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -220,7 +222,16 @@ public class MainActivity extends Activity {
             HttpsURLConnection connection = null;
             try {
                 URL imageUrl = ImageUrlPolicy.requireHttpsAuthority(urls[0].trim());
-                connection = (HttpsURLConnection) imageUrl.openConnection();
+                InetAddress[] authorizedAddresses =
+                        ImageUrlPolicy.requirePublicAddresses(imageUrl.getHost());
+                connection = (HttpsURLConnection) imageUrl.openConnection(Proxy.NO_PROXY);
+                int imagePort = imageUrl.getPort() == -1
+                        ? imageUrl.getDefaultPort() : imageUrl.getPort();
+                connection.setSSLSocketFactory(new AddressPinningSSLSocketFactory(
+                        connection.getSSLSocketFactory(),
+                        imageUrl.getHost(),
+                        imagePort,
+                        authorizedAddresses));
                 connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
                 connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);

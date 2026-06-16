@@ -1,6 +1,6 @@
 # Search Image DNS Peer Binding
 
-Status: Planned
+Status: Completed
 
 ## Problem
 
@@ -37,7 +37,8 @@ path.
    unspecified, multicast, IPv4 shared, or IPv6 unique-local answer must fail
    before image response processing.
 3. The approved address set must be installed on the individual
-   `HttpsURLConnection` before `getResponseCode` or stream access.
+   direct `HttpsURLConnection` before `getResponseCode` or stream access so an
+   HTTP proxy cannot issue a DNS-rebinding-sensitive `CONNECT` first.
 4. The socket factory's connected-socket overload must close and reject a peer
    that is prohibited or absent from the approved set before delegating to the
    platform TLS factory.
@@ -76,9 +77,10 @@ Fail closed for alternate factory overloads.
 
 **Files:** `app/src/main/java/gpj/androidsearch/MainActivity.java`
 
-Resolve and authorize the parsed image hostname, open the HTTPS connection,
-install the peer-checking socket factory, then preserve the existing redirect,
-timeout, cancellation, status, media-type, body, decode, and cleanup ordering.
+Resolve and authorize the parsed image hostname, open the HTTPS connection with
+`Proxy.NO_PROXY`, install the peer-checking socket factory, then preserve the
+existing redirect, timeout, cancellation, status, media-type, body, decode, and
+cleanup ordering.
 
 ### U4: Deterministic Regression Coverage
 
@@ -117,7 +119,9 @@ status, and verification evidence.
 ## Scope Boundaries
 
 - Do not add a permissive `HostnameVerifier`, custom trust manager, certificate
-  bypass, proxy bypass, host allowlist, or DNS cache.
+  bypass, host allowlist, or DNS cache.
+- Bypass configured HTTP proxies for backend-provided image URLs because a
+  proxy can issue `CONNECT` before the TLS socket factory can inspect the peer.
 - Do not change the search endpoint, response schema, accepted public image
   hosts, query behavior, dependencies, Android API levels, or build toolchain.
 - Do not send HTTP or TLS application data to a peer before actual-address
@@ -150,6 +154,23 @@ status, and verification evidence.
 - Audit the exact diff, generated Android/Gradle artifacts, native/dependency
   drift, credentials, conflict markers, file modes, and whitespace before
   commit.
+
+## Verification Results
+
+- `scripts/test-bounded-response-body.sh`, `scripts/test-image-url-policy.sh`,
+  and `scripts/test-response-media-type.sh` passed on June 16, 2026.
+- The focused matrix exercised `requirePublicAddresses` and
+  `AddressPinningSSLSocketFactory` with mixed DNS answers, rejected peers,
+  original-authority delegation, defensive copies, and alternate overloads.
+- Security review identified the proxy `CONNECT` ordering gap; image transport
+  now uses `Proxy.NO_PROXY`, and the portable checker enforces that ordering.
+- Nine isolated mutations covering mixed answers, peer membership and closure,
+  TLS host delegation, alternate overloads, proxy routing, activity integration,
+  guidance, and plan status were all rejected on June 16, 2026.
+- SDK-backed `./gradlew lint test assembleDebug --no-daemon` passed with zero
+  lint issues on June 16, 2026.
+- SDK-backed repository `make check` and external-directory
+  `make -f /absolute/path/Makefile check` both passed on June 16, 2026.
 
 ## References
 
