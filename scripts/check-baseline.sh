@@ -39,6 +39,7 @@ IMAGE_PRIVATE_LITERAL_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-private
 IMAGE_SHARED_ADDRESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-shared-address-boundary.md"
 IMAGE_DNS_PEER_PLAN="$ROOT_DIR/docs/plans/2026-06-16-search-image-dns-peer-binding.md"
 IMAGE_SPECIAL_USE_IPV4_PLAN="$ROOT_DIR/docs/plans/2026-06-17-search-image-special-use-ipv4-boundary.md"
+IMAGE_NON_GLOBAL_IPV6_PLAN="$ROOT_DIR/docs/plans/2026-06-17-search-image-non-global-ipv6-boundary.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -953,6 +954,70 @@ done
 for image_special_use_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   if ! grep -Fq "Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges." "$ROOT_DIR/$image_special_use_doc"; then
     printf '%s\n' "$image_special_use_doc must document image special-use IPv4 validation." >&2
+    exit 1
+  fi
+done
+for image_non_global_ipv6_contract in \
+  'isProhibitedIpv6Address' \
+  'LOCAL_TRANSLATION_IPV6_PREFIX' \
+  'DISCARD_ONLY_IPV6_PREFIX' \
+  'DUMMY_IPV6_PREFIX' \
+  'BENCHMARKING_IPV6_PREFIX' \
+  'DOCUMENTATION_2001_IPV6_PREFIX' \
+  'DOCUMENTATION_3FFF_IPV6_PREFIX' \
+  'SRV6_SID_IPV6_PREFIX' \
+  'hasIpv6Prefix(addressBytes, LOCAL_TRANSLATION_IPV6_PREFIX, 48)' \
+  'hasIpv6Prefix(addressBytes, DISCARD_ONLY_IPV6_PREFIX, 64)' \
+  'hasIpv6Prefix(addressBytes, DUMMY_IPV6_PREFIX, 64)' \
+  'hasIpv6Prefix(addressBytes, BENCHMARKING_IPV6_PREFIX, 48)' \
+  'hasIpv6Prefix(addressBytes, DOCUMENTATION_2001_IPV6_PREFIX, 32)' \
+  'hasIpv6Prefix(addressBytes, DOCUMENTATION_3FFF_IPV6_PREFIX, 20)' \
+  'hasIpv6Prefix(addressBytes, SRV6_SID_IPV6_PREFIX, 16)'; do
+  if ! grep -Fq "$image_non_global_ipv6_contract" "$IMAGE_URL_POLICY"; then
+    printf '%s\n' "Missing image non-global IPv6 contract: $image_non_global_ipv6_contract" >&2
+    exit 1
+  fi
+done
+for image_non_global_ipv6_fixture in \
+  'https://[2001:3::1]/photo.png' \
+  'https://[64:ff9b::808:808]/photo.png' \
+  'https://[64:ff9b:1::]/photo.png' \
+  'https://[64:ff9b:1:ffff:ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[100::]/photo.png' \
+  'https://[100::ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[100:0:0:1::]/photo.png' \
+  'https://[100:0:0:1:ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[2001:2::]/photo.png' \
+  'https://[2001:2:0:ffff:ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[2001:db8::]/photo.png' \
+  'https://[2001:db8:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[3fff::]/photo.png' \
+  'https://[3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png' \
+  'https://[5f00::]/photo.png' \
+  'https://[5f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png' \
+  'publicV4, ipv6("64:ff9b:1::1")' \
+  'nonGlobalIpv6Factory'; do
+  if ! grep -Fq "$image_non_global_ipv6_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image non-global IPv6 fixture is missing: $image_non_global_ipv6_fixture" >&2
+    exit 1
+  fi
+done
+for image_non_global_ipv6_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs cannot target IANA non-global IPv6 translation, discard-only, dummy, benchmarking, documentation, or SRv6 SID ranges." "$ROOT_DIR/$image_non_global_ipv6_doc"; then
+    printf '%s\n' "$image_non_global_ipv6_doc must document image non-global IPv6 validation." >&2
+    exit 1
+  fi
+done
+for image_non_global_ipv6_plan_contract in \
+  'status: completed' \
+  '64:ff9b:1::/48' \
+  '2001:db8::/32' \
+  '5f00::/16' \
+  'Repository and external-working-directory `make check`' \
+  'Fifteen isolated hostile mutations' \
+  '## Verification Results'; do
+  if ! grep -Fq "$image_non_global_ipv6_plan_contract" "$IMAGE_NON_GLOBAL_IPV6_PLAN"; then
+    printf '%s\n' "Search image non-global IPv6 plan must record completed verification: $image_non_global_ipv6_plan_contract" >&2
     exit 1
   fi
 done

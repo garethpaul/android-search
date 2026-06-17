@@ -7,6 +7,28 @@ import java.net.URL;
 import java.util.Locale;
 
 final class ImageUrlPolicy {
+    private static final int[] LOCAL_TRANSLATION_IPV6_PREFIX = {
+            0x00, 0x64, 0xff, 0x9b, 0x00, 0x01
+    };
+    private static final int[] DISCARD_ONLY_IPV6_PREFIX = {
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    private static final int[] DUMMY_IPV6_PREFIX = {
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+    };
+    private static final int[] BENCHMARKING_IPV6_PREFIX = {
+            0x20, 0x01, 0x00, 0x02, 0x00, 0x00
+    };
+    private static final int[] DOCUMENTATION_2001_IPV6_PREFIX = {
+            0x20, 0x01, 0x0d, 0xb8
+    };
+    private static final int[] DOCUMENTATION_3FFF_IPV6_PREFIX = {
+            0x3f, 0xff, 0x00
+    };
+    private static final int[] SRV6_SID_IPV6_PREFIX = {
+            0x5f, 0x00
+    };
+
     interface AddressResolver {
         InetAddress[] resolve(String host) throws UnknownHostException;
     }
@@ -151,7 +173,35 @@ final class ImageUrlPolicy {
             return isProhibitedIpv4Address(ipv4Address(addressBytes, 12));
         }
 
-        return addressBytes.length == 16 && (addressBytes[0] & 0xfe) == 0xfc;
+        return addressBytes.length == 16 && isProhibitedIpv6Address(addressBytes);
+    }
+
+    private static boolean isProhibitedIpv6Address(byte[] addressBytes) {
+        return (addressBytes[0] & 0xfe) == 0xfc
+                || hasIpv6Prefix(addressBytes, LOCAL_TRANSLATION_IPV6_PREFIX, 48)
+                || hasIpv6Prefix(addressBytes, DISCARD_ONLY_IPV6_PREFIX, 64)
+                || hasIpv6Prefix(addressBytes, DUMMY_IPV6_PREFIX, 64)
+                || hasIpv6Prefix(addressBytes, BENCHMARKING_IPV6_PREFIX, 48)
+                || hasIpv6Prefix(addressBytes, DOCUMENTATION_2001_IPV6_PREFIX, 32)
+                || hasIpv6Prefix(addressBytes, DOCUMENTATION_3FFF_IPV6_PREFIX, 20)
+                || hasIpv6Prefix(addressBytes, SRV6_SID_IPV6_PREFIX, 16);
+    }
+
+    private static boolean hasIpv6Prefix(byte[] address, int[] prefix, int prefixLength) {
+        int completeBytes = prefixLength / 8;
+        for (int index = 0; index < completeBytes; index++) {
+            if ((address[index] & 0xff) != prefix[index]) {
+                return false;
+            }
+        }
+
+        int remainingBits = prefixLength % 8;
+        if (remainingBits == 0) {
+            return true;
+        }
+        int mask = (0xff << (8 - remainingBits)) & 0xff;
+        return ((address[completeBytes] & 0xff) & mask)
+                == (prefix[completeBytes] & mask);
     }
 
     private static boolean isIpv4MappedAddress(byte[] addressBytes) {

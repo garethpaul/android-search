@@ -1,7 +1,7 @@
 ---
 title: Search Image Non-Global IPv6 Boundary
 type: security
-status: planned
+status: completed
 date: 2026-06-17
 owner: repository maintainers
 ---
@@ -124,6 +124,31 @@ completed plan status, and truthful verification results.
 - Existing tracked behavior for special-purpose entries with globally
   reachable or indeterminate semantics remains intentional until reviewed in
   a separate plan.
+
+## Work Completed
+
+- Extended the shared IPv6 address predicate for local translation,
+  discard-only, dummy, benchmarking, documentation, and SRv6 SID prefixes
+  that IANA marks non-global or destination-invalid.
+- Added lower/upper literal boundaries, globally reachable controls, every
+  reviewed DNS-answer class, mixed-answer failure, and connected-peer closure
+  coverage to the dependency-free policy harness.
+- Added mutation-sensitive baseline contracts and synchronized contributor,
+  project, security, vision, and changelog guidance.
+
+## Verification Results
+
+- An unchanged-head package-level probe accepted all seven reviewed examples,
+  reproducing the missing IPv6 boundary before implementation.
+- All bounded-body, image-policy, and response-media-type portable scripts
+  pass after implementation.
+- Repository and external-working-directory `make check` each pass under
+  Amazon Corretto 8 and the configured Android SDK with zero lint issues,
+  Gradle unit tests, and debug APK assembly.
+- Fifteen isolated hostile mutations are rejected across every prefix,
+  boundary fixtures, mixed DNS answers, connected-peer closure, globally
+  reachable controls, repository guidance, completed status, and verification
+  evidence.
 
 ## References
 

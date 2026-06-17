@@ -153,6 +153,7 @@ evidence, and explicit unexecuted rows.
 - Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup.
 - Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
 - Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges.
+- Backend-provided image URLs cannot target IANA non-global IPv6 translation, discard-only, dummy, benchmarking, documentation, or SRv6 SID ranges.
 - Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent.
 - The final request fallback handles runtime exceptions while fatal JVM errors
   propagate to the Android platform.

@@ -55,6 +55,8 @@ public final class ImageUrlPolicyTest {
         expectAccepted("https://203.0.112.255/photo.png");
         expectAccepted("https://203.0.114.0/photo.png");
         expectAccepted("https://223.255.255.255/photo.png");
+        expectAccepted("https://[64:ff9b::808:808]/photo.png");
+        expectAccepted("https://[2001:3::1]/photo.png");
         expectAccepted("https://[2001:4860:4860::8888]/photo.png");
 
         expectRejected("http://images.example.test/photo.png");
@@ -116,6 +118,20 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://[fdff:ffff::1]/photo.png");
         expectRejected("https://[fe80::1]/photo.png");
         expectRejected("https://[::ffff:10.0.0.1]/photo.png");
+        expectRejected("https://[64:ff9b:1::]/photo.png");
+        expectRejected("https://[64:ff9b:1:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[100::]/photo.png");
+        expectRejected("https://[100::ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[100:0:0:1::]/photo.png");
+        expectRejected("https://[100:0:0:1:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2001:2::]/photo.png");
+        expectRejected("https://[2001:2:0:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2001:db8::]/photo.png");
+        expectRejected("https://[2001:db8:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[3fff::]/photo.png");
+        expectRejected("https://[3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[5f00::]/photo.png");
+        expectRejected("https://[5f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
 
         testResolvedAddressPolicy();
         testConnectedPeerPolicy();
@@ -163,6 +179,13 @@ public final class ImageUrlPolicyTest {
                         0, 0, (byte) 0xff, (byte) 0xff, 10, 0, 0, 1
                 })
         });
+        expectResolutionRejected(new InetAddress[] { publicV4, ipv6("64:ff9b:1::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("100::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("100:0:0:1::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001:2::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001:db8::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("3fff::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("5f00::1") });
         expectResolutionRejected(new InetAddress[0]);
         try {
             ImageUrlPolicy.requirePublicAddresses(
@@ -205,6 +228,16 @@ public final class ImageUrlPolicyTest {
                         new InetAddress[] { benchmarkingPeer });
         expectPeerRejected(
                 specialUseFactory, new FakeConnectedSocket(benchmarkingPeer, 443));
+
+        InetAddress documentationV6Peer = ipv6("2001:db8::1");
+        AddressPinningSSLSocketFactory nonGlobalIpv6Factory =
+                new AddressPinningSSLSocketFactory(
+                        delegate,
+                        "images.example.test",
+                        443,
+                        new InetAddress[] { documentationV6Peer });
+        expectPeerRejected(
+                nonGlobalIpv6Factory, new FakeConnectedSocket(documentationV6Peer, 443));
         expectAlternatePathsRejected(factory, authorizedPeer);
     }
 
@@ -274,6 +307,10 @@ public final class ImageUrlPolicyTest {
         return InetAddress.getByAddress(new byte[] {
                 (byte) first, (byte) second, (byte) third, (byte) fourth
         });
+    }
+
+    private static InetAddress ipv6(String value) throws UnknownHostException {
+        return InetAddress.getByName(value);
     }
 
     private static void expectAccepted(String value) throws Exception {
