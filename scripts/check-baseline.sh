@@ -38,6 +38,7 @@ IMAGE_LOOPBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-loopback-bound
 IMAGE_PRIVATE_LITERAL_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-private-literal-boundary.md"
 IMAGE_SHARED_ADDRESS_PLAN="$ROOT_DIR/docs/plans/2026-06-15-search-image-shared-address-boundary.md"
 IMAGE_DNS_PEER_PLAN="$ROOT_DIR/docs/plans/2026-06-16-search-image-dns-peer-binding.md"
+IMAGE_SPECIAL_USE_IPV4_PLAN="$ROOT_DIR/docs/plans/2026-06-17-search-image-special-use-ipv4-boundary.md"
 RESPONSE_BODY_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/BoundedResponseBody.java"
 RESPONSE_BODY_TEST="$ROOT_DIR/scripts/test-bounded-response-body.sh"
 MEDIA_TYPE_READER="$ROOT_DIR/app/src/main/java/gpj/androidsearch/ResponseMediaType.java"
@@ -898,6 +899,60 @@ done
 for image_shared_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
   if ! grep -Fq "Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup." "$ROOT_DIR/$image_shared_doc"; then
     printf '%s\n' "$image_shared_doc must document image URL shared-address validation." >&2
+    exit 1
+  fi
+done
+for image_special_use_contract in \
+  'isProhibitedIpv4Address' \
+  '(address & 0xffffff00L) == 0xc0000200L' \
+  '(address & 0xffffff00L) == 0xc0586300L' \
+  '(address & 0xfffe0000L) == 0xc6120000L' \
+  '(address & 0xffffff00L) == 0xc6336400L' \
+  '(address & 0xffffff00L) == 0xcb007100L' \
+  '(address & 0xf0000000L) == 0xf0000000L' \
+  '(address & 0xffffff00L) == 0xc0000000L' \
+  'address != 0xc0000009L' \
+  'address != 0xc000000aL'; do
+  if ! grep -Fq "$image_special_use_contract" "$IMAGE_URL_POLICY"; then
+    printf '%s\n' "Missing image special-use IPv4 contract: $image_special_use_contract" >&2
+    exit 1
+  fi
+done
+for image_special_use_fixture in \
+  'https://192.0.0.9/photo.png' \
+  'https://192.0.0.10/photo.png' \
+  'https://192.0.0.11/photo.png' \
+  'https://192.0.2.0/photo.png' \
+  'https://192.88.99.255/photo.png' \
+  'https://198.18.0.0/photo.png' \
+  'https://198.19.255.255/photo.png' \
+  'https://198.51.100.255/photo.png' \
+  'https://203.0.113.255/photo.png' \
+  'https://240.0.0.0/photo.png' \
+  'https://255.255.255.255/photo.png' \
+  'address(192, 0, 2, 1)' \
+  'address(198, 18, 0, 1)' \
+  'specialUseFactory'; do
+  if ! grep -Fq "$image_special_use_fixture" "$IMAGE_URL_POLICY_TEST"; then
+    printf '%s\n' "Search image special-use IPv4 fixture is missing: $image_special_use_fixture" >&2
+    exit 1
+  fi
+done
+for image_special_use_plan_contract in \
+  'status: completed' \
+  '192.0.0.0/24' \
+  '198.18.0.0/15' \
+  'make check' \
+  'mutations' \
+  '## Verification Results'; do
+  if ! grep -Fq "$image_special_use_plan_contract" "$IMAGE_SPECIAL_USE_IPV4_PLAN"; then
+    printf '%s\n' "Search image special-use IPv4 plan must record completed verification: $image_special_use_plan_contract" >&2
+    exit 1
+  fi
+done
+for image_special_use_doc in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges." "$ROOT_DIR/$image_special_use_doc"; then
+    printf '%s\n' "$image_special_use_doc must document image special-use IPv4 validation." >&2
     exit 1
   fi
 done

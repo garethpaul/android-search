@@ -1,7 +1,7 @@
 ---
 title: Search Image Special-Use IPv4 Boundary
 type: security
-status: planned
+status: completed
 date: 2026-06-17
 owner: repository maintainers
 ---
@@ -104,6 +104,29 @@ guidance, completed status, and actual verification record.
   literal/DNS/peer coverage, guidance, plan status, and verification evidence.
 - Audit the exact diff, generated Android/Gradle artifacts, dependency drift,
   credentials, conflict markers, file modes, and whitespace before commit.
+
+## Work Completed
+
+- Extended the shared IPv4 classifier for protocol-assignment,
+  documentation, deprecated relay, benchmarking, and reserved ranges while
+  preserving the globally reachable `192.0.0.9` and `192.0.0.10` exceptions.
+- Added literal, DNS-answer, mixed-answer, connected-peer, boundary, and public
+  neighbor coverage to the portable image policy matrix.
+- Added baseline contracts and repository guidance for the new boundary.
+
+## Verification Results
+
+- The new matrix failed before implementation on the accepted
+  `192.0.0.0` literal, reproducing the missing boundary.
+- All three portable response, image-policy, and media-type test scripts pass.
+- SDK-backed `./gradlew lint test assembleDebug --no-daemon` passes with zero
+  lint issues.
+- An isolated completed candidate copy passes SDK-backed `make check`.
+- Repository and external-working-directory SDK-backed `make check` both pass
+  the baseline, zero-issue lint, portable tests, Gradle tests, and debug build.
+- Twelve isolated hostile mutations were rejected for the six range
+  contracts, both protocol-assignment exceptions, connected-peer coverage,
+  guidance, completed status, and verification evidence.
 
 ## References
 

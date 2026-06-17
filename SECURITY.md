@@ -53,6 +53,7 @@ Helpful reports include:
 - Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
 - Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup.
 - Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
+- Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges.
 - Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent.
 - Search JSON requests reject redirects before response validation.
 - Search JSON responses require successful 2xx status before entity access.

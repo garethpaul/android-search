@@ -40,8 +40,21 @@ public final class ImageUrlPolicyTest {
         expectAccepted("https://169.253.255.255/photo.png");
         expectAccepted("https://172.15.255.255/photo.png");
         expectAccepted("https://172.32.0.0/photo.png");
+        expectAccepted("https://192.0.0.9/photo.png");
+        expectAccepted("https://192.0.0.10/photo.png");
+        expectAccepted("https://192.0.1.255/photo.png");
+        expectAccepted("https://192.0.3.0/photo.png");
+        expectAccepted("https://192.88.98.255/photo.png");
+        expectAccepted("https://192.88.100.0/photo.png");
         expectAccepted("https://192.167.255.255/photo.png");
         expectAccepted("https://192.169.0.0/photo.png");
+        expectAccepted("https://198.17.255.255/photo.png");
+        expectAccepted("https://198.20.0.0/photo.png");
+        expectAccepted("https://198.51.99.255/photo.png");
+        expectAccepted("https://198.51.101.0/photo.png");
+        expectAccepted("https://203.0.112.255/photo.png");
+        expectAccepted("https://203.0.114.0/photo.png");
+        expectAccepted("https://223.255.255.255/photo.png");
         expectAccepted("https://[2001:4860:4860::8888]/photo.png");
 
         expectRejected("http://images.example.test/photo.png");
@@ -81,7 +94,23 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://169.254.1.1/photo.png");
         expectRejected("https://172.16.0.1/photo.png");
         expectRejected("https://172.31.255.255/photo.png");
+        expectRejected("https://192.0.0.0/photo.png");
+        expectRejected("https://192.0.0.8/photo.png");
+        expectRejected("https://192.0.0.11/photo.png");
+        expectRejected("https://192.0.0.255/photo.png");
+        expectRejected("https://192.0.2.0/photo.png");
+        expectRejected("https://192.0.2.255/photo.png");
+        expectRejected("https://192.88.99.0/photo.png");
+        expectRejected("https://192.88.99.255/photo.png");
         expectRejected("https://192.168.1.1/photo.png");
+        expectRejected("https://198.18.0.0/photo.png");
+        expectRejected("https://198.19.255.255/photo.png");
+        expectRejected("https://198.51.100.0/photo.png");
+        expectRejected("https://198.51.100.255/photo.png");
+        expectRejected("https://203.0.113.0/photo.png");
+        expectRejected("https://203.0.113.255/photo.png");
+        expectRejected("https://240.0.0.0/photo.png");
+        expectRejected("https://255.255.255.255/photo.png");
         expectRejected("https://[::]/photo.png");
         expectRejected("https://[fc00::1]/photo.png");
         expectRejected("https://[fdff:ffff::1]/photo.png");
@@ -114,6 +143,13 @@ public final class ImageUrlPolicyTest {
         expectResolutionRejected(new InetAddress[] { address(169, 254, 1, 1) });
         expectResolutionRejected(new InetAddress[] { address(192, 168, 1, 1) });
         expectResolutionRejected(new InetAddress[] { address(100, 64, 0, 1) });
+        expectResolutionRejected(new InetAddress[] { publicV4, address(192, 0, 2, 1) });
+        expectResolutionRejected(new InetAddress[] { address(192, 0, 0, 8) });
+        expectResolutionRejected(new InetAddress[] { address(192, 88, 99, 1) });
+        expectResolutionRejected(new InetAddress[] { address(198, 18, 0, 1) });
+        expectResolutionRejected(new InetAddress[] { address(198, 51, 100, 1) });
+        expectResolutionRejected(new InetAddress[] { address(203, 0, 113, 1) });
+        expectResolutionRejected(new InetAddress[] { address(240, 0, 0, 1) });
         expectResolutionRejected(new InetAddress[] { address(224, 0, 0, 1) });
         expectResolutionRejected(new InetAddress[] {
                 InetAddress.getByAddress(new byte[] {
@@ -159,6 +195,16 @@ public final class ImageUrlPolicyTest {
         expectPeerRejected(factory, new FakeConnectedSocket(address(10, 0, 0, 1), 443));
         expectPeerRejected(factory, new FakeConnectedSocket(authorizedPeer, 8443));
         expectPeerRejected(factory, new FakeConnectedSocket(null, 443));
+
+        InetAddress benchmarkingPeer = address(198, 18, 0, 1);
+        AddressPinningSSLSocketFactory specialUseFactory =
+                new AddressPinningSSLSocketFactory(
+                        delegate,
+                        "images.example.test",
+                        443,
+                        new InetAddress[] { benchmarkingPeer });
+        expectPeerRejected(
+                specialUseFactory, new FakeConnectedSocket(benchmarkingPeer, 443));
         expectAlternatePathsRejected(factory, authorizedPeer);
     }
 

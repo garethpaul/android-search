@@ -130,7 +130,7 @@ final class ImageUrlPolicy {
         }
 
         long ipv4Address = parseIpv4Literal(normalizedHost);
-        return ipv4Address >= 0 && isPrivateIpv4Address(ipv4Address);
+        return ipv4Address >= 0 && isProhibitedIpv4Address(ipv4Address);
     }
 
     static boolean isProhibitedAddress(InetAddress address) {
@@ -145,10 +145,10 @@ final class ImageUrlPolicy {
 
         byte[] addressBytes = address.getAddress();
         if (addressBytes.length == 4) {
-            return isPrivateIpv4Address(ipv4Address(addressBytes, 0));
+            return isProhibitedIpv4Address(ipv4Address(addressBytes, 0));
         }
         if (addressBytes.length == 16 && isIpv4MappedAddress(addressBytes)) {
-            return isPrivateIpv4Address(ipv4Address(addressBytes, 12));
+            return isProhibitedIpv4Address(ipv4Address(addressBytes, 12));
         }
 
         return addressBytes.length == 16 && (addressBytes[0] & 0xfe) == 0xfc;
@@ -171,13 +171,22 @@ final class ImageUrlPolicy {
         return ipv4Address;
     }
 
-    private static boolean isPrivateIpv4Address(long address) {
+    private static boolean isProhibitedIpv4Address(long address) {
         return (address & 0xff000000L) == 0x00000000L
                 || (address & 0xff000000L) == 0x0a000000L
                 || (address & 0xffc00000L) == 0x64400000L
                 || (address & 0xffff0000L) == 0xa9fe0000L
                 || (address & 0xfff00000L) == 0xac100000L
-                || (address & 0xffff0000L) == 0xc0a80000L;
+                || (address & 0xffffff00L) == 0xc0000200L
+                || (address & 0xffffff00L) == 0xc0586300L
+                || (address & 0xffff0000L) == 0xc0a80000L
+                || (address & 0xfffe0000L) == 0xc6120000L
+                || (address & 0xffffff00L) == 0xc6336400L
+                || (address & 0xffffff00L) == 0xcb007100L
+                || (address & 0xf0000000L) == 0xf0000000L
+                || ((address & 0xffffff00L) == 0xc0000000L
+                        && address != 0xc0000009L
+                        && address != 0xc000000aL);
     }
 
     private static long parseIpv4Part(String value, long maximum) {
