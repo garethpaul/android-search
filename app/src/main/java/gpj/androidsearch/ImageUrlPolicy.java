@@ -7,6 +7,10 @@ import java.net.URL;
 import java.util.Locale;
 
 final class ImageUrlPolicy {
+    private static final int[] WELL_KNOWN_TRANSLATION_IPV6_PREFIX = {
+            0x00, 0x64, 0xff, 0x9b, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
     private static final int[] LOCAL_TRANSLATION_IPV6_PREFIX = {
             0x00, 0x64, 0xff, 0x9b, 0x00, 0x01
     };
@@ -18,6 +22,36 @@ final class ImageUrlPolicy {
     };
     private static final int[] BENCHMARKING_IPV6_PREFIX = {
             0x20, 0x01, 0x00, 0x02, 0x00, 0x00
+    };
+    private static final int[] IETF_PROTOCOL_ASSIGNMENTS_IPV6_PREFIX = {
+            0x20, 0x01, 0x00
+    };
+    private static final int[] PCP_ANYCAST_IPV6_ADDRESS = {
+            0x20, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+    };
+    private static final int[] TURN_RELAY_ANYCAST_IPV6_ADDRESS = {
+            0x20, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02
+    };
+    private static final int[] DNS_SD_ANYCAST_IPV6_ADDRESS = {
+            0x20, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03
+    };
+    private static final int[] AMT_IPV6_PREFIX = {
+            0x20, 0x01, 0x00, 0x03
+    };
+    private static final int[] AS112_IPV6_PREFIX = {
+            0x20, 0x01, 0x00, 0x04, 0x01, 0x12
+    };
+    private static final int[] ORCHIDV2_IPV6_PREFIX = {
+            0x20, 0x01, 0x00, 0x20
+    };
+    private static final int[] DET_IPV6_PREFIX = {
+            0x20, 0x01, 0x00, 0x30
+    };
+    private static final int[] SIX_TO_FOUR_IPV6_PREFIX = {
+            0x20, 0x02
     };
     private static final int[] DOCUMENTATION_2001_IPV6_PREFIX = {
             0x20, 0x01, 0x0d, 0xb8
@@ -145,7 +179,9 @@ final class ImageUrlPolicy {
                 && normalizedHost.indexOf(':') >= 0) {
             String address = normalizedHost.substring(1, normalizedHost.length() - 1);
             try {
-                return isProhibitedAddress(InetAddress.getByName(address));
+                InetAddress parsedAddress = InetAddress.getByName(address);
+                return parsedAddress.getAddress().length == 4
+                        || isProhibitedAddress(parsedAddress);
             } catch (UnknownHostException ignored) {
                 return false;
             }
@@ -170,21 +206,42 @@ final class ImageUrlPolicy {
             return isProhibitedIpv4Address(ipv4Address(addressBytes, 0));
         }
         if (addressBytes.length == 16 && isIpv4MappedAddress(addressBytes)) {
-            return isProhibitedIpv4Address(ipv4Address(addressBytes, 12));
+            return true;
+        }
+        if (addressBytes.length == 16 && isIpv4CompatibleAddress(addressBytes)) {
+            return true;
         }
 
         return addressBytes.length == 16 && isProhibitedIpv6Address(addressBytes);
     }
 
     private static boolean isProhibitedIpv6Address(byte[] addressBytes) {
+        if (hasIpv6Prefix(addressBytes, WELL_KNOWN_TRANSLATION_IPV6_PREFIX, 96)
+                && isProhibitedIpv4Address(ipv4Address(addressBytes, 12))) {
+            return true;
+        }
+
         return (addressBytes[0] & 0xfe) == 0xfc
                 || hasIpv6Prefix(addressBytes, LOCAL_TRANSLATION_IPV6_PREFIX, 48)
                 || hasIpv6Prefix(addressBytes, DISCARD_ONLY_IPV6_PREFIX, 64)
                 || hasIpv6Prefix(addressBytes, DUMMY_IPV6_PREFIX, 64)
+                || isProhibitedIetfProtocolAssignment(addressBytes)
                 || hasIpv6Prefix(addressBytes, BENCHMARKING_IPV6_PREFIX, 48)
                 || hasIpv6Prefix(addressBytes, DOCUMENTATION_2001_IPV6_PREFIX, 32)
+                || hasIpv6Prefix(addressBytes, SIX_TO_FOUR_IPV6_PREFIX, 16)
                 || hasIpv6Prefix(addressBytes, DOCUMENTATION_3FFF_IPV6_PREFIX, 20)
                 || hasIpv6Prefix(addressBytes, SRV6_SID_IPV6_PREFIX, 16);
+    }
+
+    private static boolean isProhibitedIetfProtocolAssignment(byte[] addressBytes) {
+        return hasIpv6Prefix(addressBytes, IETF_PROTOCOL_ASSIGNMENTS_IPV6_PREFIX, 23)
+                && !hasIpv6Prefix(addressBytes, PCP_ANYCAST_IPV6_ADDRESS, 128)
+                && !hasIpv6Prefix(addressBytes, TURN_RELAY_ANYCAST_IPV6_ADDRESS, 128)
+                && !hasIpv6Prefix(addressBytes, DNS_SD_ANYCAST_IPV6_ADDRESS, 128)
+                && !hasIpv6Prefix(addressBytes, AMT_IPV6_PREFIX, 32)
+                && !hasIpv6Prefix(addressBytes, AS112_IPV6_PREFIX, 48)
+                && !hasIpv6Prefix(addressBytes, ORCHIDV2_IPV6_PREFIX, 28)
+                && !hasIpv6Prefix(addressBytes, DET_IPV6_PREFIX, 28);
     }
 
     private static boolean hasIpv6Prefix(byte[] address, int[] prefix, int prefixLength) {
@@ -211,6 +268,15 @@ final class ImageUrlPolicy {
             }
         }
         return addressBytes[10] == (byte) 0xff && addressBytes[11] == (byte) 0xff;
+    }
+
+    private static boolean isIpv4CompatibleAddress(byte[] addressBytes) {
+        for (int index = 0; index < 12; index++) {
+            if (addressBytes[index] != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static long ipv4Address(byte[] addressBytes, int offset) {

@@ -56,7 +56,13 @@ public final class ImageUrlPolicyTest {
         expectAccepted("https://203.0.114.0/photo.png");
         expectAccepted("https://223.255.255.255/photo.png");
         expectAccepted("https://[64:ff9b::808:808]/photo.png");
+        expectAccepted("https://[2001:1::1]/photo.png");
+        expectAccepted("https://[2001:1::2]/photo.png");
+        expectAccepted("https://[2001:1::3]/photo.png");
         expectAccepted("https://[2001:3::1]/photo.png");
+        expectAccepted("https://[2001:4:112::1]/photo.png");
+        expectAccepted("https://[2001:20::1]/photo.png");
+        expectAccepted("https://[2001:30::1]/photo.png");
         expectAccepted("https://[2001:4860:4860::8888]/photo.png");
 
         expectRejected("http://images.example.test/photo.png");
@@ -114,20 +120,31 @@ public final class ImageUrlPolicyTest {
         expectRejected("https://240.0.0.0/photo.png");
         expectRejected("https://255.255.255.255/photo.png");
         expectRejected("https://[::]/photo.png");
+        expectRejected("https://[::8.8.8.8]/photo.png");
+        expectRejected("https://[::ffff:8.8.8.8]/photo.png");
         expectRejected("https://[fc00::1]/photo.png");
         expectRejected("https://[fdff:ffff::1]/photo.png");
         expectRejected("https://[fe80::1]/photo.png");
         expectRejected("https://[::ffff:10.0.0.1]/photo.png");
+        expectRejected("https://[64:ff9b::a00:1]/photo.png");
+        expectRejected("https://[64:ff9b::6440:1]/photo.png");
+        expectRejected("https://[64:ff9b::c000:201]/photo.png");
         expectRejected("https://[64:ff9b:1::]/photo.png");
         expectRejected("https://[64:ff9b:1:ffff:ffff:ffff:ffff:ffff]/photo.png");
         expectRejected("https://[100::]/photo.png");
         expectRejected("https://[100::ffff:ffff:ffff:ffff]/photo.png");
         expectRejected("https://[100:0:0:1::]/photo.png");
         expectRejected("https://[100:0:0:1:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2001::1]/photo.png");
+        expectRejected("https://[2001:0:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2001:1::4]/photo.png");
         expectRejected("https://[2001:2::]/photo.png");
         expectRejected("https://[2001:2:0:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2001:10::1]/photo.png");
         expectRejected("https://[2001:db8::]/photo.png");
         expectRejected("https://[2001:db8:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
+        expectRejected("https://[2002::]/photo.png");
+        expectRejected("https://[2002:0a00:0001::]/photo.png");
         expectRejected("https://[3fff::]/photo.png");
         expectRejected("https://[3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff]/photo.png");
         expectRejected("https://[5f00::]/photo.png");
@@ -141,7 +158,7 @@ public final class ImageUrlPolicyTest {
 
     private static void testResolvedAddressPolicy() throws Exception {
         InetAddress publicV4 = address(8, 8, 8, 8);
-        InetAddress publicV6 = InetAddress.getByAddress(new byte[] {
+        InetAddress publicV6 = ipv6Address(new byte[] {
                 0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0,
                 0, 0, 0, 0, 0, 0, (byte) 0x88, (byte) 0x88
         });
@@ -168,22 +185,43 @@ public final class ImageUrlPolicyTest {
         expectResolutionRejected(new InetAddress[] { address(240, 0, 0, 1) });
         expectResolutionRejected(new InetAddress[] { address(224, 0, 0, 1) });
         expectResolutionRejected(new InetAddress[] {
-                InetAddress.getByAddress(new byte[] {
+                ipv6Address(new byte[] {
                         (byte) 0xfc, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0, 0, 0, 1
                 })
         });
         expectResolutionRejected(new InetAddress[] {
-                InetAddress.getByAddress(new byte[] {
+                ipv6Address(new byte[] {
                         0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0, (byte) 0xff, (byte) 0xff, 10, 0, 0, 1
                 })
         });
+        expectResolutionRejected(new InetAddress[] {
+                ipv6Address(new byte[] {
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 8, 8, 8, 8
+                })
+        });
+        expectResolutionRejected(new InetAddress[] {
+                ipv6Address(new byte[] {
+                        0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 0, (byte) 0xff, (byte) 0xff, 8, 8, 8, 8
+                })
+        });
+        expectResolutionRejected(new InetAddress[] { ipv6("64:ff9b::10.0.0.1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("64:ff9b::100.64.0.1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("64:ff9b::192.0.2.1") });
         expectResolutionRejected(new InetAddress[] { publicV4, ipv6("64:ff9b:1::1") });
         expectResolutionRejected(new InetAddress[] { ipv6("100::1") });
         expectResolutionRejected(new InetAddress[] { ipv6("100:0:0:1::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001:0:ffff:ffff:ffff:ffff:ffff:ffff") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001:1::4") });
         expectResolutionRejected(new InetAddress[] { ipv6("2001:2::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2001:10::1") });
         expectResolutionRejected(new InetAddress[] { ipv6("2001:db8::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2002::1") });
+        expectResolutionRejected(new InetAddress[] { ipv6("2002:0a00:0001::1") });
         expectResolutionRejected(new InetAddress[] { ipv6("3fff::1") });
         expectResolutionRejected(new InetAddress[] { ipv6("5f00::1") });
         expectResolutionRejected(new InetAddress[0]);
@@ -238,6 +276,15 @@ public final class ImageUrlPolicyTest {
                         new InetAddress[] { documentationV6Peer });
         expectPeerRejected(
                 nonGlobalIpv6Factory, new FakeConnectedSocket(documentationV6Peer, 443));
+        InetAddress nat64PrivatePeer = ipv6("64:ff9b::10.0.0.1");
+        AddressPinningSSLSocketFactory nat64PrivateFactory =
+                new AddressPinningSSLSocketFactory(
+                        delegate,
+                        "images.example.test",
+                        443,
+                        new InetAddress[] { nat64PrivatePeer });
+        expectPeerRejected(
+                nat64PrivateFactory, new FakeConnectedSocket(nat64PrivatePeer, 443));
         expectAlternatePathsRejected(factory, authorizedPeer);
     }
 
@@ -311,6 +358,10 @@ public final class ImageUrlPolicyTest {
 
     private static InetAddress ipv6(String value) throws UnknownHostException {
         return InetAddress.getByName(value);
+    }
+
+    private static InetAddress ipv6Address(byte[] value) throws UnknownHostException {
+        return java.net.Inet6Address.getByAddress(null, value, -1);
     }
 
     private static void expectAccepted(String value) throws Exception {
