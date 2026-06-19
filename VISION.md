@@ -1,5 +1,7 @@
 ## Android Search Vision
 
+Search intents are trimmed and limited to 200 characters before URL encoding.
+
 This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
 
@@ -17,6 +19,8 @@ The current focus is:
 
 Priority:
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+
 - Preserve the search intent and `SearchView` flow
 - Keep the remote API behavior visible in source
 - Avoid broad changes to networking without documenting response expectations
@@ -24,7 +28,21 @@ Priority:
 - Maintain SDK-free `make check` coverage for network and response guardrails
 - Keep root lint, test, and build gates wired to the Gradle project
 - Keep search queries and raw responses out of success-path device logs
+- Convert recoverable runtime failures into generic results without catching
+  fatal JVM errors
+- Keep the 64 KiB response-body limit enforced before backend JSON parsing
+- Reject malformed UTF-8 search JSON before parsing backend responses
+- Search JSON responses require successful 2xx status before entity access
 - Keep backend-provided image URLs HTTPS-only and timeout-bounded before decode
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
+- Backend-provided image URLs use only the default HTTPS port before connection setup.
+- Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
+- Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup.
+- Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
+- Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges.
+- Backend-provided image URLs cannot target IANA non-global IPv6 translation, discard-only, dummy, benchmarking, documentation, or SRv6 SID ranges.
+- Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent.
+- Image downloads reject redirects and non-success responses before decoding.
 - Keep Android app-data backup disabled by default for the sample
 - Keep search activity startup safe when legacy ActionBar presentation is
   unavailable
@@ -35,15 +53,22 @@ Priority:
 - Keep search intent handling tolerant of null intents and missing result views
 - Keep network completion asynchronous and ignore results after activity
   teardown
+- Abort active JSON and image transports when search task ownership is cancelled
 - Keep search and image results owned by the latest active request
 - Keep the SDK-free `make check` baseline running in GitHub Actions
+- Keep the legacy Gradle runtime behind a checksum-verified generated wrapper
+- Keep exact-commit Android Search device verification matrix evidence separate
+  from portable checks, with unexecuted backend, network, and UI rows explicit
 
 Next priorities:
 
 - Replace deprecated Apache HTTP usage with maintained networking APIs
 - Add input encoding, null handling, and error-state coverage around search
 - Document the expected API response shape
-- Modernize Gradle, SDK levels, and tests in a dedicated pass
+- Evaluate Gradle runtime, SDK, and test modernization together in a dedicated
+  compatibility pass; wrapper hardening is separate
+- Execute the device verification matrix with synthetic queries and
+  privacy-safe backend, network, and lifecycle evidence
 
 Contribution rules:
 

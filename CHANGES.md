@@ -1,7 +1,49 @@
 # Changes
 
+## 2026-06-15
+
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
+- Backend-provided image URLs use only the default HTTPS port before connection setup.
+- Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
+- Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup.
+- Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
+- Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges.
+- Backend-provided image URLs cannot target IANA non-global IPv6 translation, discard-only, dummy, benchmarking, documentation, or SRv6 SID ranges.
+- Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent.
+
+## 2026-06-14
+
+- Search JSON responses require successful 2xx status before entity access.
+- Search cancellation now aborts active JSON requests and disconnects active
+  image transports, including cancellation races during transport publication.
+- Added an exact-commit Android Search device verification matrix for query
+  boundaries, cancellation, backend failures, response and image guards,
+  rotation, relaunch, and privacy-safe evidence, with every runtime row explicitly unexecuted.
+- Search intents are trimmed and limited to 200 characters before URL encoding.
+- Required JSON and image response media types before acquiring network body
+  streams, including parameter and structured `+json` handling.
+- Disabled redirects for fixed-endpoint JSON search requests.
+- Search clients reject malformed UTF-8 search JSON before JSON parsing.
+- Added a dependency-free Java media-type matrix to the canonical test gate.
+
+## 2026-06-13
+
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+- Image downloads reject redirects and non-success responses before decoding.
+- Added a 64 KiB response-body limit for declared and streaming search JSON,
+  with an executable Java boundary harness and guaranteed stream cleanup.
+- Narrowed the final search request fallback to runtime exceptions so fatal JVM
+  errors continue to propagate to the Android platform.
+- Replaced throwable-bearing network and image errors with generic search
+  failure logs and added contracts against exception- or request-derived data.
+
 ## 2026-06-12
 
+- Regenerated the Gradle wrapper bootstrap with official Gradle 8.14.5 tooling
+  while retaining the Gradle 2.2.1 Android runtime.
+- Pinned the official distribution checksum and exact wrapper artifact contracts.
+- Promoted CI from source-only contracts to the complete API 22 lint, unit-test,
+  and debug-assembly gate with deterministic legacy resource processing.
 - Shut down each legacy search HTTP client's connection manager after request
   completion or failure to avoid retaining sockets across repeated queries.
 
@@ -18,6 +60,11 @@
 - Extended the SDK-free baseline to require the CI workflow and completed CI
   plan.
 - Removed the maintainer-specific Android SDK path from the Makefile.
+- Removed a generated preview that did not match the app's TextView/ImageView
+  result screen.
+- Disabled persisted checkout credentials, added ownership for CI controls and
+  privacy-sensitive application source, and replaced partial workflow checks
+  with one canonical workflow contract.
 
 ## 2026-06-09
 

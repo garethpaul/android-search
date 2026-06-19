@@ -23,14 +23,19 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
+import java.net.InetAddress;
+import java.net.Proxy;
 import java.net.URL;
-import java.net.URLConnection;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends Activity {
 
     private static final String LOG_TAG = "android_search";
     private static final int IMAGE_DOWNLOAD_TIMEOUT_MILLIS = 1000;
+    private static final int MAX_IMAGE_BODY_BYTES = 1024 * 1024;
+    private static final long MAX_IMAGE_PIXELS = 4_000_000L;
+    private static final int MAX_SEARCH_QUERY_CHARACTERS = 200;
 
     private TextView textView;
     private NetworkRequest activeSearchRequest;
@@ -129,7 +134,9 @@ public class MainActivity extends Activity {
         String query = intent.getStringExtra(SearchManager.QUERY);
         cancelActiveRequests();
         clearResultImage();
-        if (query == null || query.trim().length() == 0) {
+        String normalizedQuery = query == null ? "" : query.trim();
+        if (normalizedQuery.length() == 0
+                || normalizedQuery.length() > MAX_SEARCH_QUERY_CHARACTERS) {
             textView.setText(R.string.search_request_failed);
             return;
         }
@@ -145,7 +152,7 @@ public class MainActivity extends Activity {
                 displaySearchResult(json);
             }
         };
-        activeSearchRequest.execute(query.trim());
+        activeSearchRequest.execute(normalizedQuery);
     }
 
     private void displaySearchResult(JSONObject json) {
@@ -180,7 +187,7 @@ public class MainActivity extends Activity {
 
     private void cancelActiveRequests() {
         if (activeSearchRequest != null) {
-            activeSearchRequest.cancel(true);
+            activeSearchRequest.cancelRequest();
             activeSearchRequest = null;
         }
         cancelActiveImageRequest();
@@ -188,13 +195,14 @@ public class MainActivity extends Activity {
 
     private void cancelActiveImageRequest() {
         if (activeImageRequest != null) {
-            activeImageRequest.cancel(true);
+            activeImageRequest.cancelDownload();
             activeImageRequest = null;
         }
     }
 
     private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
         ImageView bmImage;
+        private volatile HttpsURLConnection activeConnection;
 
         public DownloadImageTask(ImageView bmImage) {
             this.bmImage = bmImage;
@@ -205,28 +213,77 @@ public class MainActivity extends Activity {
                     || urls[0].trim().length() == 0) {
                 return null;
             }
+            if (isCancelled()) {
+                return null;
+            }
 
             Bitmap mIcon11 = null;
             InputStream in = null;
+            HttpsURLConnection connection = null;
             try {
-                URL imageUrl = httpsImageUrl(urls[0].trim());
-                URLConnection connection = imageUrl.openConnection();
+                URL imageUrl = ImageUrlPolicy.requireHttpsAuthority(urls[0].trim());
+                InetAddress[] authorizedAddresses =
+                        ImageUrlPolicy.requirePublicAddresses(imageUrl.getHost());
+                connection = (HttpsURLConnection) imageUrl.openConnection(Proxy.NO_PROXY);
+                int imagePort = imageUrl.getPort() == -1
+                        ? imageUrl.getDefaultPort() : imageUrl.getPort();
+                connection.setSSLSocketFactory(new AddressPinningSSLSocketFactory(
+                        connection.getSSLSocketFactory(),
+                        imageUrl.getHost(),
+                        imagePort,
+                        authorizedAddresses));
+                connection.setInstanceFollowRedirects(false);
                 connection.setConnectTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
                 connection.setReadTimeout(IMAGE_DOWNLOAD_TIMEOUT_MILLIS);
+                activeConnection = connection;
+                if (isCancelled()) {
+                    connection.disconnect();
+                    return null;
+                }
+                int responseCode = connection.getResponseCode();
+                if (responseCode < 200 || responseCode >= 300) {
+                    throw new IOException("Search image request failed");
+                }
+                if (!ResponseMediaType.isImage(connection.getContentType())) {
+                    throw new IOException("Search image media type is invalid");
+                }
                 in = connection.getInputStream();
-                mIcon11 = BitmapFactory.decodeStream(in);
+                byte[] imageBody = BoundedResponseBody.readBytes(
+                        in,
+                        connection.getContentLength(),
+                        MAX_IMAGE_BODY_BYTES);
+                mIcon11 = decodeBoundedImage(imageBody);
             } catch (Exception e) {
-                Log.e(LOG_TAG, "Unable to download search image", e);
+                Log.e(LOG_TAG, "Unable to download search image");
             } finally {
                 if (in != null) {
                     try {
                         in.close();
                     } catch (IOException e) {
-                        Log.e(LOG_TAG, "Unable to close search image stream", e);
+                        Log.e(LOG_TAG, "Unable to close search image stream");
                     }
+                }
+                if (connection != null) {
+                    if (activeConnection == connection) {
+                        activeConnection = null;
+                    }
+                    connection.disconnect();
                 }
             }
             return mIcon11;
+        }
+
+        void cancelDownload() {
+            HttpsURLConnection connection = activeConnection;
+            if (connection != null) {
+                connection.disconnect();
+            }
+            cancel(true);
+            HttpsURLConnection publishedAfterCancellation = activeConnection;
+            if (publishedAfterCancellation != null
+                    && publishedAfterCancellation != connection) {
+                publishedAfterCancellation.disconnect();
+            }
         }
 
         protected void onPostExecute(Bitmap result) {
@@ -241,13 +298,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    private static URL httpsImageUrl(String value) throws MalformedURLException {
-        URL imageUrl = new URL(value);
-        if (!"https".equalsIgnoreCase(imageUrl.getProtocol())) {
-            throw new MalformedURLException("Search image URLs must use HTTPS");
+    private static Bitmap decodeBoundedImage(byte[] imageBody) throws IOException {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(imageBody, 0, imageBody.length, bounds);
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0
+                || (long) bounds.outWidth * bounds.outHeight > MAX_IMAGE_PIXELS) {
+            throw new IOException("Search image dimensions exceed limit");
         }
 
-        return imageUrl;
+        return BitmapFactory.decodeByteArray(imageBody, 0, imageBody.length);
     }
 
     @Override

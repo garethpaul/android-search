@@ -1,12 +1,9 @@
 # android-search
 
+Search intents are trimmed and limited to 200 characters before URL encoding.
+
 <!-- README-OVERVIEW-IMAGE -->
 ![Project overview](docs/readme-overview.svg)
-
-## Device Preview
-
-<!-- DEVICE-PREVIEW-IMAGE -->
-![Device preview](docs/device-preview.svg)
 
 ## Overview
 
@@ -47,6 +44,12 @@ Additional scan context:
 
 ### Setup
 
+The generated wrapper still executes Gradle 2.2.1 for compatibility. It uses
+`distributionSha256Sum` to authenticate the downloaded distribution, while the
+SDK-free baseline verifies the checked-in wrapper JAR and launchers. This does
+not make an uncached build offline-reproducible; the first build still needs
+Gradle's HTTPS distribution service.
+
 ```bash
 git clone https://github.com/garethpaul/android-search.git
 cd android-search
@@ -70,12 +73,10 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 - `make build` - runs debug assembly when the Android SDK is configured.
 - `make check` - runs the aggregate lint, test, and build gates.
 - `scripts/check-baseline.sh` - runs SDK-free source baseline checks.
-- GitHub Actions runs `make check` on pushes and pull requests. On hosted
-  Linux runners without the legacy Android SDK, the SDK-free baseline still
-  runs and Gradle gates report clear skips. The workflow uses Ubuntu 24.04 and
-  cancels superseded runs.
-- Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`; CI clears
-  both variables to preserve the documented static-only boundary.
+- GitHub Actions installs Android API 22 and build-tools 24.0.3 under Java 8,
+  then runs the complete `make check` gate on pushes and pull requests. The
+  workflow uses Ubuntu 24.04 and cancels superseded runs.
+- Local Gradle checks accept `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
 - The SDK-free baseline protects URL encoding, response fallbacks, timeout
   wiring, optional image handling, search intent/result view null-safety, and
   sensitive search log suppression.
@@ -83,14 +84,30 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
+Use [`DEVICE_VERIFICATION.md`](DEVICE_VERIFICATION.md) for the exact-commit
+Android search matrix. It covers valid and invalid queries, cancellation,
+offline and protocol failures, image limits, rotation, relaunch, privacy-safe
+evidence, and explicit unexecuted rows.
+
 ## Configuration and Secrets
 
 - Detected references to Twitter. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
 - This legacy Android baseline pins Android build-tools 24.0.3 and Android Gradle Plugin 1.2.3.
 - Search result image downloads require HTTPS and bounded connection/read
   timeouts before decoding the bitmap.
+- Image downloads reject redirects and non-success responses before decoding.
+- Search JSON requests reject redirects before response validation.
+- Search JSON responses require successful 2xx status before entity access.
 - Search HTTP clients shut down their connection managers after every request
   outcome so repeated queries do not retain socket pools.
+- Replaced or paused searches abort their active JSON request and disconnect
+  their active image transport before cancelling task ownership.
+- Search JSON downloads enforce a 64 KiB response-body limit for declared and
+  streaming lengths before parsing, preventing unbounded response allocation.
+- Search clients reject malformed UTF-8 search JSON instead of parsing text
+  after replacement decoding.
+- Search JSON and image downloads require matching declared media types before
+  response streams are read.
 - The search activity guards nullable ActionBar setup before applying icon and
   home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the
@@ -111,6 +128,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Security and Privacy Notes
 
+- Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
+
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include proguard-com.twitter.sdk.android.twitter.txt.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include app/src/androidTest/java/gpj/androidsearch/ApplicationTest.java, app/src/main/AndroidManifest.xml, app/src/main/java/gpj/androidsearch/NetworkRequest.java, app/src/main/res/layout/activity_main.xml, and 6 more.
 - Review changes touching mobile permissions or privacy-sensitive device data; examples from the scan include app/src/main/AndroidManifest.xml, gradlew.
@@ -126,12 +145,25 @@ When the required SDK or runtime is unavailable, use static checks and source re
   host-compatible version.
 - Search request success paths avoid logging full query URLs or raw response
   bodies.
+- Network and image exceptions use generic search failure logs without
+  exception messages, stack traces, query-bearing URLs, or response details.
+- Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
+- Backend-provided image URLs use only the default HTTPS port before connection setup.
+- Backend-provided image URLs cannot explicitly target loopback hosts before connection setup.
+- Backend-provided image URLs cannot explicitly target private, link-local, or unspecified IP literals before connection setup.
+- Backend-provided image URLs cannot explicitly target IPv4 shared address space before connection setup.
+- Backend-provided image URLs cannot target IANA special-use IPv4 protocol-assignment, documentation, deprecated relay, benchmarking, or reserved ranges.
+- Backend-provided image URLs cannot target IANA non-global IPv6 translation, discard-only, dummy, benchmarking, documentation, or SRv6 SID ranges.
+- Backend-provided image URL DNS answers must exclude prohibited address classes, and a direct HTTPS connection must match an authorized answer before TLS or HTTP data is sent.
+- The final request fallback handles runtime exceptions while fatal JVM errors
+  propagate to the Android platform.
 - Search intent handling guards null intents and missing result views while
   preserving the existing search action flow.
 - Android app-data backup is disabled by default for the search sample.
-- `app/lint.xml` suppresses only the obsolete lint API database error from this
-  old toolchain and the missing-density-folder warning for bitmap assets
-  intentionally kept in `drawable-nodpi`.
+- `app/lint.xml` suppresses the obsolete lint API database error, the
+  missing-density-folder warning for bitmap assets intentionally kept in
+  `drawable-nodpi`, and the deliberately deferred target-SDK modernization
+  warning. All other lint warnings fail the build.
 - Future work should replace the deprecated Apache HTTP client and AsyncTask
   flow, add testable request/response parsing, modernize SDK levels, and add
   emulator or device coverage.
@@ -139,6 +171,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
   response handling and SDK-free wrapper baseline.
 - See `docs/plans/2026-06-09-search-query-logging-privacy.md` for the search
   query logging privacy contract.
+- See `docs/plans/2026-06-13-search-exception-log-redaction.md` for generic
+  search failure logs and completed verification evidence.
+- See `docs/plans/2026-06-13-search-runtime-exception-boundary.md` for the
+  recoverable runtime and fatal JVM error boundary.
 - See `docs/plans/2026-06-09-search-image-download-guard.md` for the HTTPS
   image download guard.
 - See `docs/plans/2026-06-09-search-actionbar-guard.md` for the nullable
@@ -157,6 +193,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   intent and result view null-safety contract.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
   Actions baseline.
+- See `docs/plans/2026-06-14-android-search-device-verification-checklist.md`
+  for the device evidence matrix and runtime non-claims.
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
 

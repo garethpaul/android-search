@@ -1,0 +1,5 @@
+/.github/CODEOWNERS @garethpaul
+/.github/workflows/ @garethpaul
+/Makefile @garethpaul
+/scripts/check-baseline.sh @garethpaul
+/app/src/main/java/ @garethpaul
