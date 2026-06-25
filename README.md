@@ -159,6 +159,7 @@ evidence, and explicit unexecuted rows.
   propagate to the Android platform.
 - Search intent handling guards null intents and missing result views while
   preserving the existing search action flow.
+- New singleTop search intents become the activity's current intent before dispatch.
 - Android app-data backup is disabled by default for the search sample.
 - `app/lint.xml` suppresses the obsolete lint API database error, the
   missing-density-folder warning for bitmap assets intentionally kept in
@@ -191,6 +192,8 @@ evidence, and explicit unexecuted rows.
   app-data backup opt-out.
 - See `docs/plans/2026-06-09-search-intent-ui-guard.md` for the search
   intent and result view null-safety contract.
+- See `docs/plans/2026-06-25-search-new-intent-ownership.md` for singleTop
+  intent replacement before query dispatch and later activity recreation.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the lightweight GitHub
   Actions baseline.
 - See `docs/plans/2026-06-14-android-search-device-verification-checklist.md`

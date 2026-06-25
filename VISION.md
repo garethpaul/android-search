@@ -1,6 +1,7 @@
 ## Android Search Vision
 
 Search intents are trimmed and limited to 200 characters before URL encoding.
+New singleTop search intents become the activity's current intent before dispatch.
 
 This document explains the current state and direction of the project.
 Project overview and developer docs: [`README.md`](README.md)
@@ -22,6 +23,7 @@ Priority:
 - Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
 
 - Preserve the search intent and `SearchView` flow
+- Keep new singleTop search intents activity-owned before query dispatch
 - Keep the remote API behavior visible in source
 - Avoid broad changes to networking without documenting response expectations
 - Maintain a buildable Android Studio/Gradle project baseline

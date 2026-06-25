@@ -50,6 +50,7 @@
 ## Safety and gotchas
 
 - Search intents are trimmed and limited to 200 characters before URL encoding.
+- New singleTop search intents become the activity's current intent before dispatch.
 
 - Image downloads bound compressed bodies and decoded pixel dimensions before allocation.
 

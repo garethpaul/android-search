@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-25 07:28:18 PDT
+
+- New singleTop search intents become the activity's current intent before dispatch.
+- Added ordered lifecycle contracts that reject missing superclass delivery,
+  stale activity intent ownership, and dispatch-before-ownership regressions.
+
 ## 2026-06-15
 
 - Backend-provided image URLs require HTTPS, a non-empty host, and no user-info credentials before connection setup.
