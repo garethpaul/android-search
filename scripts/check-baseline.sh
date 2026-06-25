@@ -15,6 +15,7 @@ SECURITY="$ROOT_DIR/SECURITY.md"
 RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-08-search-response-guard-baseline.md"
 IMAGE_DOWNLOAD_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-image-download-guard.md"
 INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
+INTENT_OWNERSHIP_PLAN="$ROOT_DIR/docs/plans/2026-06-25-search-new-intent-ownership.md"
 SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
@@ -459,6 +460,49 @@ if grep -Fq 'Log.v("network_request", responseBody)' "$NETWORK_REQUEST"; then
   printf '%s\n' "Search requests must not log raw response bodies." >&2
   exit 1
 fi
+
+ON_NEW_INTENT_SCOPE=$(sed -n \
+  '/protected void onNewIntent(Intent intent)/,/^    }/p' \
+  "$MAIN_ACTIVITY")
+for intent_ownership_contract in \
+  'super.onNewIntent(intent);' \
+  'setIntent(intent);' \
+  'handleIntent(intent);'; do
+  if ! printf '%s\n' "$ON_NEW_INTENT_SCOPE" | grep -Fq "$intent_ownership_contract"; then
+    printf '%s\n' "New search intents must become activity-owned before dispatch: $intent_ownership_contract" >&2
+    exit 1
+  fi
+done
+
+super_intent_line=$(printf '%s\n' "$ON_NEW_INTENT_SCOPE" | grep -nF 'super.onNewIntent(intent);' | cut -d: -f1)
+set_intent_line=$(printf '%s\n' "$ON_NEW_INTENT_SCOPE" | grep -nF 'setIntent(intent);' | cut -d: -f1)
+handle_intent_line=$(printf '%s\n' "$ON_NEW_INTENT_SCOPE" | grep -nF 'handleIntent(intent);' | cut -d: -f1)
+if [ -z "$super_intent_line" ] || [ -z "$set_intent_line" ] || \
+   [ -z "$handle_intent_line" ] || \
+   [ "$super_intent_line" -ge "$set_intent_line" ] || \
+   [ "$set_intent_line" -ge "$handle_intent_line" ]; then
+  printf '%s\n' "New search intents must call super, become current, then dispatch in lifecycle order." >&2
+  exit 1
+fi
+
+intent_ownership_guidance="New singleTop search intents become the activity's current intent before dispatch."
+for intent_ownership_document in AGENTS.md README.md SECURITY.md VISION.md CHANGES.md; do
+  if ! grep -Fq "$intent_ownership_guidance" "$ROOT_DIR/$intent_ownership_document"; then
+    printf '%s\n' "$intent_ownership_document must document new search-intent ownership." >&2
+    exit 1
+  fi
+done
+for intent_ownership_plan_contract in \
+  'Status: Completed' \
+  'make check' \
+  'external-directory' \
+  'hostile intent-ownership mutations were rejected' \
+  'No Android SDK, emulator, or physical device was used'; do
+  if ! grep -Fq "$intent_ownership_plan_contract" "$INTENT_OWNERSHIP_PLAN"; then
+    printf '%s\n' "New search-intent ownership plan must preserve completion evidence: $intent_ownership_plan_contract" >&2
+    exit 1
+  fi
+done
 
 for async_contract in \
   'MAX_SEARCH_QUERY_CHARACTERS = 200' \

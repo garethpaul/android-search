@@ -1,6 +1,7 @@
 # Security Policy
 
 Search intents are trimmed and limited to 200 characters before URL encoding.
+New singleTop search intents become the activity's current intent before dispatch.
 
 ## Supported Versions
 
