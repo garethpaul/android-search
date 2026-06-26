@@ -109,9 +109,12 @@ public class MainActivity extends Activity {
         searchView.setSearchableInfo(searchableInfo);
 
         int searchImgId = getResources().getIdentifier("android:id/search_button", null, null);
-        ImageView v = (ImageView) searchView.findViewById(searchImgId);
-        if (v != null) {
-            v.setImageResource(R.drawable.cross);
+        View searchButton = searchView.findViewById(searchImgId);
+        if (searchButton instanceof ImageView) {
+            ImageView searchButtonImage = (ImageView) searchButton;
+            searchButtonImage.setImageResource(R.drawable.cross);
+        } else {
+            Log.w(LOG_TAG, "Search button image view is unavailable");
         }
         
         return true;

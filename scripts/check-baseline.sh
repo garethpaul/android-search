@@ -18,6 +18,7 @@ INTENT_UI_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-intent-ui-guard.md"
 INTENT_OWNERSHIP_PLAN="$ROOT_DIR/docs/plans/2026-06-25-search-new-intent-ownership.md"
 SEARCHABLE_INFO_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-searchable-info-guard.md"
 SEARCH_ACTION_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-action-view-type-guard.md"
+SEARCH_BUTTON_VIEW_PLAN="$ROOT_DIR/docs/plans/2026-06-26-search-button-view-type-guard.md"
 ANDROID_BACKUP_PLAN="$ROOT_DIR/docs/plans/2026-06-09-android-backup-opt-out.md"
 OPTIONS_CALLBACK_PLAN="$ROOT_DIR/docs/plans/2026-06-09-search-options-callback-guard.md"
 HTTP_CLIENT_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-search-http-client-cleanup.md"
@@ -722,8 +723,11 @@ for pattern in \
   "if (searchableInfo == null)" \
   "Searchable configuration is unavailable" \
   "searchView.setSearchableInfo(searchableInfo);" \
-  "if (v != null)" \
-  "v.setImageResource(R.drawable.cross);"; do
+  "View searchButton = searchView.findViewById(searchImgId);" \
+  "if (searchButton instanceof ImageView)" \
+  "ImageView searchButtonImage = (ImageView) searchButton;" \
+  "searchButtonImage.setImageResource(R.drawable.cross);" \
+  "Search button image view is unavailable"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
     printf '%s\n' "Missing search menu guard: $pattern" >&2
     exit 1
@@ -771,6 +775,11 @@ fi
 
 if grep -Fq "SearchView searchView = (SearchView) searchItem.getActionView();" "$MAIN_ACTIVITY"; then
   printf '%s\n' "SearchView setup must type-check action views before casting." >&2
+  exit 1
+fi
+
+if grep -Fq "ImageView v = (ImageView) searchView.findViewById(searchImgId);" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search button setup must type-check framework child views before casting." >&2
   exit 1
 fi
 
@@ -1611,6 +1620,24 @@ if ! grep -Fq "status: completed" "$SEARCH_ACTION_VIEW_PLAN" || ! grep -Fq "make
   printf '%s\n' "Search action-view type guard plan must record completed status and make check verification." >&2
   exit 1
 fi
+
+if [ ! -f "$SEARCH_BUTTON_VIEW_PLAN" ]; then
+  printf '%s\n' "Search button-view type guard plan is missing." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Status: Completed" "$SEARCH_BUTTON_VIEW_PLAN" || \
+   ! grep -Fq "make check" "$SEARCH_BUTTON_VIEW_PLAN"; then
+  printf '%s\n' "Search button-view type guard plan must record completed status and make check verification." >&2
+  exit 1
+fi
+
+for search_button_doc in "$ROOT_DIR/AGENTS.md" "$README" "$ROOT_DIR/VISION.md" "$ROOT_DIR/CHANGES.md"; do
+  if ! grep -Fq "Framework search-button children are type-checked before ImageView casting." "$search_button_doc"; then
+    printf '%s\n' "$search_button_doc must document search-button child type safety." >&2
+    exit 1
+  fi
+done
 
 if [ ! -f "$ANDROID_BACKUP_PLAN" ]; then
   printf '%s\n' "Android backup opt-out plan is missing." >&2

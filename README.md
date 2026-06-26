@@ -114,6 +114,9 @@ evidence, and explicit unexecuted rows.
   searchable configuration or replacing the search icon.
 - Search action views are type-checked before SearchView casting so menu
   resource drift does not crash setup.
+- Framework search-button children are type-checked before ImageView casting.
+  Missing or differently typed OEM/framework internals leave the default icon
+  intact instead of crashing menu creation.
 - Searchable configuration is checked before SearchView wiring so manifest or
   searchable-resource drift does not crash menu setup.
 - Search intent handling guards null intents and missing result views before

@@ -75,6 +75,7 @@
 - The search activity guards nullable ActionBar setup before applying icon and home presentation.
 - Search menu setup guards missing framework search UI pieces before wiring the searchable configuration or replacing the search icon.
 - Search action views are type-checked before SearchView casting so menu resource drift does not crash setup.
+- Framework search-button children are type-checked before ImageView casting.
 
 ## Agent workflow
 
