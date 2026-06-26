@@ -51,6 +51,7 @@ Priority:
 - Keep search menu setup tolerant of missing framework search UI components
 - Keep search options callbacks tolerant of missing menu callback objects
 - Keep SearchView action-view wiring type-safe around menu resource drift
+- Framework search-button children are type-checked before ImageView casting.
 - Keep SearchView wiring tolerant of missing searchable configuration
 - Keep search intent handling tolerant of null intents and missing result views
 - Keep network completion asynchronous and ignore results after activity

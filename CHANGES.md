@@ -1,5 +1,53 @@
 # Changes
 
+## 2026-06-26 02:54 PDT - P2 - Type-check framework search buttons
+
+### Summary
+Hardened search menu creation against OEM or framework drift that exposes the
+internal search-button ID as a non-`ImageView` child.
+
+### Work completed
+- Read the framework child into a neutral `View` reference.
+- Apply the custom cross icon only after an `instanceof ImageView` check.
+- Preserve the framework default icon when the child is missing or differently
+  typed and emit only a sanitized warning.
+- Added an SDK-free source contract rejecting the previous direct cast.
+- Framework search-button children are type-checked before ImageView casting.
+
+### Threads
+- Started: none.
+- Continued: search menu framework-boundary hardening — child type guard complete.
+- Stopped: none.
+
+### Files changed
+- `app/src/main/java/gpj/androidsearch/MainActivity.java` — makes the internal
+  search-button customization type-safe.
+- `scripts/check-baseline.sh` — enforces source, plan, and documentation
+  contracts.
+- Documentation and plan files — record the non-fatal fallback behavior.
+
+### Validation
+- Red-first `scripts/check-baseline.sh` — failed on the missing neutral-view
+  and subtype guard, then passed after implementation.
+- Direct-cast restoration mutation — rejected by the SDK-free baseline.
+- `make lint|test|build|verify|check` — passed under `C` and `C.UTF-8` and from
+  `/tmp` through the absolute Makefile path.
+- Canonical gates truthfully skipped Gradle-backed steps because no local
+  Android SDK is configured.
+- Shell syntax and `git diff --check` — passed.
+- Hosted Android/CodeQL exact-head checks and review remain the next action.
+
+### Bugs / findings
+- P2: the prior cast executed before the null check, so an unexpected framework
+  child subtype could throw `ClassCastException` during menu creation.
+
+### Blockers
+- None for SDK-free validation; local Android SDK availability is checked by
+  the canonical Make gate.
+
+### Next action
+- Open the PR, run hosted exact-head validation and review, then merge.
+
 ## 2026-06-25 07:28:18 PDT
 
 - New singleTop search intents become the activity's current intent before dispatch.
