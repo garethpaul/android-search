@@ -165,7 +165,6 @@ public class MainActivity extends Activity {
         }
 
         cancelActiveImageRequest();
-        ImageView imageView = (ImageView) findViewById(R.id.imageView);
 
         if (json == null) {
             textView.setText(R.string.search_request_failed);
@@ -176,17 +175,29 @@ public class MainActivity extends Activity {
         textView.setText(textInfo);
 
         String textImage = json.optString("image", "");
-        if (textImage.length() > 0 && imageView != null) {
-            activeImageRequest = new DownloadImageTask(imageView);
-            activeImageRequest.execute(textImage);
+        if (textImage.length() > 0) {
+            ImageView imageView = findResultImageView();
+            if (imageView != null) {
+                activeImageRequest = new DownloadImageTask(imageView);
+                activeImageRequest.execute(textImage);
+            }
         }
     }
 
     private void clearResultImage() {
-        ImageView imageView = (ImageView) findViewById(R.id.imageView);
+        ImageView imageView = findResultImageView();
         if (imageView != null) {
             imageView.setImageDrawable(null);
         }
+    }
+
+    private ImageView findResultImageView() {
+        View imageResultView = findViewById(R.id.imageView);
+        if (imageResultView instanceof ImageView) {
+            return (ImageView) imageResultView;
+        }
+        Log.w(LOG_TAG, "Search result image view is unavailable");
+        return null;
     }
 
     private void cancelActiveRequests() {

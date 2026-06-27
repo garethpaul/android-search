@@ -1,5 +1,44 @@
 # Changes
 
+## 2026-06-26 17:10 PDT - P1 - Type-check search result image views
+
+### Summary
+Closed a layout-drift crash path by type-checking the result image view before
+clear or download operations.
+
+### Work completed
+- Added a red source contract that rejects direct result-image casts.
+- Centralized guarded result image lookup for clear and display paths.
+- Preserved empty backend image handling and generic privacy-safe logging.
+
+### Threads
+- Started: none.
+- Continued: search UI resource-drift hardening.
+- Stopped: none.
+
+### Files changed
+- `MainActivity.java` — uses one guarded result-image lookup helper.
+- `scripts/check-baseline.sh` — preserves the type boundary.
+- Documentation and the completed plan — record the maintained behavior.
+
+### Validation
+- `scripts/check-baseline.sh` — failed before implementation on the missing
+  guarded lookup contract.
+- `/usr/bin/make check` — portable source, bounded-body, image URL, and media
+  type harnesses passed; local Gradle phases reported the documented SDK skip.
+- The same gate passed from `/tmp` through the absolute Makefile path.
+- `git diff --check` — passed; hosted Gradle and CodeQL remain next.
+
+### Bugs / findings
+- P1 crash: `findViewById` was force-cast before the existing null check in two
+  search-result paths.
+
+### Blockers
+- None for portable validation; hosted Android provides Gradle authority.
+
+### Next action
+- Run the full gate, review the exact head, and merge the focused PR.
+
 ## 2026-06-26 02:54 PDT - P2 - Type-check framework search buttons
 
 ### Summary

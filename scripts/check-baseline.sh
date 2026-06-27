@@ -740,7 +740,11 @@ for pattern in \
   "if (!Intent.ACTION_SEARCH.equals(intent.getAction()))" \
   "if (textView == null)" \
   "Search result text view is unavailable" \
-  "ImageView imageView = (ImageView) findViewById(R.id.imageView);" \
+  "ImageView imageView = findResultImageView();" \
+  "private ImageView findResultImageView()" \
+  "View imageResultView = findViewById(R.id.imageView);" \
+  "if (imageResultView instanceof ImageView)" \
+  "Search result image view is unavailable" \
   "if (imageView != null)" \
   "activeImageRequest = new DownloadImageTask(imageView);"; do
   if ! grep -Fq "$pattern" "$MAIN_ACTIVITY"; then
@@ -768,6 +772,11 @@ if grep -Fq "new DownloadImageTask((ImageView) findViewById(R.id.imageView))" "$
   exit 1
 fi
 
+if grep -Fq "(ImageView) findViewById(R.id.imageView)" "$MAIN_ACTIVITY"; then
+  printf '%s\n' "Search result image views must be type-checked before casting." >&2
+  exit 1
+fi
+
 if grep -Fq "searchManager.getSearchableInfo(getComponentName()))" "$MAIN_ACTIVITY"; then
   printf '%s\n' "SearchView setup must guard missing searchable configuration." >&2
   exit 1
@@ -783,7 +792,7 @@ if grep -Fq "ImageView v = (ImageView) searchView.findViewById(searchImgId);" "$
   exit 1
 fi
 
-if ! grep -Fq "if (textImage.length() > 0 && imageView != null)" "$MAIN_ACTIVITY"; then
+if ! grep -Fq "if (textImage.length() > 0)" "$MAIN_ACTIVITY"; then
   printf '%s\n' "Search UI must not download empty image URLs." >&2
   exit 1
 fi
@@ -1578,6 +1587,11 @@ fi
 
 if ! grep -Fq "Search intent handling guards null intents and missing result views" "$README"; then
   printf '%s\n' "README must document search intent/UI null-safety." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Search result image views are type-checked before ImageView casting" "$README"; then
+  printf '%s\n' "README must document search result image-view type safety." >&2
   exit 1
 fi
 
