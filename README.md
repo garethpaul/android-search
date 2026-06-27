@@ -121,6 +121,8 @@ evidence, and explicit unexecuted rows.
   searchable-resource drift does not crash menu setup.
 - Search intent handling guards null intents and missing result views before
   reading query extras or rendering returned data.
+- Search result image views are type-checked before ImageView casting in both
+  clear and download paths so layout drift fails closed.
 - Search intents reject blank queries and render results from the asynchronous
   completion callback instead of blocking the activity thread on `get()`.
 - Late search callbacks are ignored after the activity is finishing or
