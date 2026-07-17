@@ -1385,6 +1385,45 @@ if [ "$(grep -Fc '$(ROOT)scripts/check-baseline.sh' "$ROOT_DIR/Makefile")" -ne 1
   exit 1
 fi
 
+# The counted greps above prove each harness path is *mentioned* in the Makefile;
+# they do not prove it is *invoked*, because a substring match is also satisfied
+# by a commented-out or `@echo`-prefixed recipe line. Pin each invocation as a
+# whole recipe line (leading tab, no prefix) so the mention cannot drift away
+# from the execution.
+MAKE_RECIPE_TAB=$(printf '\t')
+for make_invocation in \
+  'scripts/check-baseline.sh' \
+  'scripts/test-bounded-response-body.sh' \
+  'scripts/test-image-url-policy.sh' \
+  'scripts/test-response-media-type.sh'; do
+  if ! grep -Fxq "${MAKE_RECIPE_TAB}\$(ROOT)${make_invocation}" "$ROOT_DIR/Makefile"; then
+    printf '%s\n' "Makefile must invoke $make_invocation as an unconditional recipe line: \$(ROOT)$make_invocation" >&2
+    exit 1
+  fi
+done
+
+# Each harness compiles production sources and then runs the compiled test.
+# The fixture greps elsewhere in this script only prove the generated test
+# *source* is present, i.e. that it compiles; they pass even if the `java`
+# execution line is deleted. Pin the javac line and the java execution line as
+# two separate whole-line literals per harness, so neither can substring-satisfy
+# the other's pin.
+for harness_contract in \
+  "$RESPONSE_BODY_TEST"'|java -cp "$TMP_DIR/classes" gpj.androidsearch.BoundedResponseBodyTest' \
+  "$IMAGE_URL_POLICY_TEST"'|java -cp "$TMP_DIR/classes" gpj.androidsearch.ImageUrlPolicyTest' \
+  "$MEDIA_TYPE_TEST"'|java -cp "$TMP_DIR/classes" gpj.androidsearch.ResponseMediaTypeTest'; do
+  harness_file=${harness_contract%%|*}
+  harness_exec=${harness_contract#*|}
+  if ! grep -Fxq 'javac -source 1.7 -target 1.7 -Xlint:all,-options -Werror \' "$harness_file"; then
+    printf '%s\n' "$harness_file must compile its harness with the pinned javac contract." >&2
+    exit 1
+  fi
+  if ! grep -Fxq "$harness_exec" "$harness_file"; then
+    printf '%s\n' "$harness_file must execute its compiled harness: $harness_exec" >&2
+    exit 1
+  fi
+done
+
 if [ ! -f "$MEDIA_TYPE_PLAN" ] || \
    ! grep -Fq "Status: Completed" "$MEDIA_TYPE_PLAN" || \
    ! grep -Fq "make check" "$MEDIA_TYPE_PLAN" || \
